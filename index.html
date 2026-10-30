@@ -1,0 +1,1955 @@
+<!doctype html>
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="shell-type" content="mobile_tab" />
+  <title>TripSync - 친구들과 함께하는 실시간 여행 플래너</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet" />
+  <script type="module" crossorigin src="./assets/index-CBMURuYa.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-Cf6B0pZy.css">
+</head>
+
+<body class="bg-surface text-on-surface antialiased">
+  <div id="root"></div>
+</body>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="shell-type" content="mobile_tab" />
+  <title>TripSync - 친구들과 함께하는 실시간 여행 플래너 & N빵 정산</title>
+
+  <!-- Fonts & Icons -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#faf8ff",
+            "surface-dim": "#d2d9f4",
+            "surface-bright": "#faf8ff",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#f2f3ff",
+            "surface-container": "#eaedff",
+            "surface-container-high": "#e2e7ff",
+            "surface-container-highest": "#dae2fd",
+            "on-surface": "#131b2e",
+            "on-surface-variant": "#3f4850",
+            "inverse-surface": "#283044",
+            "inverse-on-surface": "#eef0ff",
+            "outline": "#707881",
+            "outline-variant": "#bfc7d2",
+            "surface-tint": "#006398",
+            "primary": "#006194",
+            "on-primary": "#ffffff",
+            "primary-container": "#007bb9",
+            "on-primary-container": "#fdfcff",
+            "inverse-primary": "#93ccff",
+            "primary-fixed": "#cce5ff",
+            "primary-fixed-dim": "#93ccff",
+            "secondary": "#006c49",
+            "on-secondary": "#ffffff",
+            "secondary-container": "#6cf8bb",
+            "on-secondary-container": "#00714d",
+            "tertiary": "#b90538",
+            "tertiary-container": "#dc2c4f",
+            "on-tertiary-container": "#fffbff",
+            "tertiary-fixed": "#ffdadb",
+            "error": "#ba1a1a",
+            "on-error": "#ffffff",
+            "error-container": "#ffdad6",
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'Noto Sans KR', 'sans-serif'],
+          },
+          spacing: {
+            'gutter': '1rem',
+            'space-sm': '0.5rem',
+            'space-xs': '0.25rem',
+            'space-md': '0.75rem',
+            'space-lg': '1rem',
+            'space-xl': '1.5rem',
+            'margin': '1rem',
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Canvas Confetti for Celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
+
+  <style>
+    body {
+      overscroll-behavior: none;
+      font-family: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+      min-height: 100dvh;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .pt-safe {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+
+    .material-symbols-outlined.filled {
+      font-variation-settings: 'FILL' 1;
+    }
+  </style>
+</head>
+
+<body class="bg-surface text-on-surface antialiased flex flex-col min-h-screen">
+  <!-- Toast Notification -->
+  <div id="toastNotification"
+    class="fixed top-20 inset-x-4 z-50 transform -translate-y-24 opacity-0 transition-all duration-300 pointer-events-none flex items-center justify-between px-4 py-3 rounded-2xl bg-inverse-surface text-inverse-on-surface shadow-2xl max-w-md mx-auto">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-[20px] text-secondary-container">check_circle</span>
+      <span id="toastMessage" class="text-xs sm:text-sm font-semibold">알림 메시지</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="fixed top-0 inset-x-0 z-40 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe">
+    <div class="h-16 px-margin flex items-center justify-between max-w-3xl mx-auto w-full">
+      <div class="flex items-center gap-space-sm cursor-pointer" onclick="switchTab('schedule')">
+        <div id="headerEmoji"
+          class="w-9 h-9 rounded-2xl bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-on-primary shadow-md text-lg shrink-0">
+          ✈️
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="text-lg font-extrabold tracking-tight text-primary leading-tight">TripSync</span>
+          <div class="flex items-center gap-1.5" id="syncStatusBadge">
+            <span class="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
+            <span class="text-[11px] text-on-surface-variant font-medium">로컬 저장 모드</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1 sm:gap-2">
+        <button id="btnManualSync" onclick="manualSync()"
+          class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high/60 transition-colors"
+          title="실시간 동기화">
+          <span class="material-symbols-outlined text-[22px]">sync</span>
+        </button>
+        <button onclick="copyShareLink()"
+          class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high/60 transition-colors"
+          title="초대 링크 복사">
+          <span class="material-symbols-outlined text-[22px]">share</span>
+        </button>
+        <button onclick="openModal('syncModal')"
+          class="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-on-primary shadow-md active:scale-95 transition-all"
+          title="동기화 및 백업 설정">
+          <span class="material-symbols-outlined text-[22px]">cloud_sync</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 flex flex-col w-full max-w-3xl mx-auto pt-20 pb-24 px-margin">
+    <!-- View 1: 일정 조율 (Schedule) -->
+    <div id="viewSchedule" class="tab-view flex flex-col gap-space-xl"></div>
+
+    <!-- View 2: 여행 계획 (Plan) -->
+    <div id="viewPlan" class="tab-view hidden flex flex-col gap-space-xl"></div>
+
+    <!-- View 3: 경비 정산 (Expense) -->
+    <div id="viewExpense" class="tab-view hidden flex flex-col gap-space-xl"></div>
+
+    <!-- View 4: 체크리스트 (Checklist) -->
+    <div id="viewChecklist" class="tab-view hidden flex flex-col gap-space-xl"></div>
+  </main>
+
+  <!-- Bottom Navigation Bar -->
+  <nav
+    class="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(19,27,46,0.06)] border-t border-outline-variant/20">
+    <div class="grid grid-cols-4 items-center h-16 px-1 max-w-3xl mx-auto">
+      <button onclick="switchTab('schedule')" id="nav-schedule"
+        class="nav-btn flex flex-col items-center justify-center gap-0.5 h-full text-primary font-bold">
+        <span class="material-symbols-outlined text-[22px] filled">sync_alt</span>
+        <span class="text-[11px] leading-tight">일정 조율</span>
+      </button>
+      <button onclick="switchTab('plan')" id="nav-plan"
+        class="nav-btn flex flex-col items-center justify-center gap-0.5 h-full text-on-surface-variant font-medium">
+        <span class="material-symbols-outlined text-[22px]">calendar_month</span>
+        <span class="text-[11px] leading-tight">여행 계획</span>
+      </button>
+      <button onclick="switchTab('expense')" id="nav-expense"
+        class="nav-btn flex flex-col items-center justify-center gap-0.5 h-full text-on-surface-variant font-medium">
+        <span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
+        <span class="text-[11px] leading-tight">경비 정산</span>
+      </button>
+      <button onclick="switchTab('checklist')" id="nav-checklist"
+        class="nav-btn flex flex-col items-center justify-center gap-0.5 h-full text-on-surface-variant font-medium">
+        <span class="material-symbols-outlined text-[22px]">checklist</span>
+        <span class="text-[11px] leading-tight">체크리스트</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Modals Container -->
+  <div id="modalsRoot"></div>
+
+  <!-- Main Standalone Application Script -->
+  <script>
+    /* =========================================================================
+       1. DATA STORAGE & INITIAL STATE
+       ========================================================================= */
+    const STORAGE_KEY = 'TRAVEL_SYNC_APP_DATA_V1';
+    const SYNC_KEY = 'TRAVEL_SYNC_CONFIG_V1';
+
+    const DEFAULT_DATA = {
+      version: 1,
+      updatedAt: Date.now(),
+      tripInfo: {
+        id: 'trip-1',
+        title: '우정 뿜뿜 후쿠오카 ✈️',
+        destination: '일본 후쿠오카',
+        startDate: '2026-07-15',
+        endDate: '2026-07-18',
+        coverEmoji: '✈️',
+        memo: '맛있는 거 많이 먹고 텐진 & 하카타 완전 정복!'
+      },
+      friends: [
+        { id: 'f1', name: '민호', color: '#006194', accountInfo: '토스뱅크 1000-123-45678' },
+        { id: 'f2', name: '다은', color: '#006c49', accountInfo: '카카오뱅크 3333-01-2345678' },
+        { id: 'f3', name: '지우', color: '#b90538', accountInfo: '신한은행 110-345-678901' },
+        { id: 'f4', name: '서연', color: '#d97706', accountInfo: '국민은행 456789-01-234567' }
+      ],
+      datePoll: {
+        candidates: [
+          { id: 'c1', dateStr: '2026-07-15 ~ 07-18 (수~토)', notes: '항공권 가장 저렴 & 숙소 여유' },
+          { id: 'c2', dateStr: '2026-07-17 ~ 07-20 (금~월)', notes: '직장인 연차 1일만 소진' }
+        ],
+        votes: {
+          f1: { c1: 'yes', c2: 'maybe' },
+          f2: { c1: 'yes', c2: 'yes' },
+          f3: { c1: 'yes', c2: 'no' },
+          f4: { c1: 'maybe', c2: 'yes' }
+        }
+      },
+      plans: [
+        { id: 'p1', day: 1, time: '10:30', title: '후쿠오카 공항 도착 & 지하철 패스 수령', category: 'transport', location: '후쿠오카 국제선 공항', costEstimate: 12000, completed: true, memo: '1번 출구 인포메이션 데스크' },
+        { id: 'p2', day: 1, time: '12:30', title: '신신라멘 하카타 데토스점 점심', category: 'meal', location: '하카타역 데토스 지하 1층', costEstimate: 15000, completed: true, memo: '웨이팅 약 20분 예상' },
+        { id: 'p3', day: 1, time: '14:30', title: '호텔 하카타 체크인 및 짐 보관', category: 'stay', location: '하카타역 도보 5분', costEstimate: 0, completed: false, memo: '예약번호: HK-99231' },
+        { id: 'p4', day: 1, time: '16:00', title: '캐널시티 하카타 분수쇼 & 쇼핑', category: 'activity', location: '캐널시티', costEstimate: 30000, completed: false, memo: '매시 정각 분수쇼 관람' },
+        { id: 'p5', day: 1, time: '19:30', title: '모츠나베 마에다야 총본점 저녁', category: 'meal', location: '하카타역 인근', costEstimate: 45000, completed: false, memo: '된장 베이스 나베 추천' },
+        { id: 'p6', day: 2, time: '09:30', title: '모모치 해변 & 후쿠오카 타워', category: 'sightseeing', location: '사와라구 모모치하마', costEstimate: 10000, completed: false, memo: '일몰 포토존 확인' }
+      ],
+      expenses: [
+        { id: 'e1', title: '이치란 라멘 본점 (야식)', amount: 68000, payerId: 'f2', category: 'meal', date: '2026-07-15', location: '나카스 본점', participantIds: ['f1', 'f2', 'f3', 'f4'], memo: '라멘 4그릇 + 차슈 추가', createdAt: 1720000001 },
+        { id: 'e2', title: '호텔 하카타 3박 숙박비 결제', amount: 360000, payerId: 'f1', category: 'stay', date: '2026-07-10', location: '아고다 사전결제', participantIds: ['f1', 'f2', 'f3', 'f4'], memo: '트윈룸 2개 예약 완료', createdAt: 1720000002 },
+        { id: 'e3', title: '모츠나베 마에다야 저녁 식사', amount: 148000, payerId: 'f1', category: 'meal', date: '2026-07-15', location: '하카타 본점', participantIds: ['f1', 'f2', 'f3', 'f4'], memo: '모츠나베 4인분 + 나마비루', createdAt: 1720000003 },
+        { id: 'e4', title: '후쿠오카 지하철 1일 패스 (4매)', amount: 28000, payerId: 'f3', category: 'transport', date: '2026-07-15', location: '공항역 발권기', participantIds: ['f1', 'f2', 'f3', 'f4'], memo: '무제한 탑승권', createdAt: 1720000004 },
+        { id: 'e5', title: '편의점 야식 맥주 & 안주', amount: 24000, payerId: 'f3', category: 'snack', date: '2026-07-15', location: '로손 하카타점', participantIds: ['f1', 'f2', 'f3'], memo: '서연이는 일찍 자서 3명만 분담!', createdAt: 1720000005 }
+      ],
+      checklists: [
+        { id: 'ch1', text: '여권 (유효기간 6개월 이상)', type: 'personal', completed: true },
+        { id: 'ch2', text: '110V 돼지코 어댑터 (각자 2개씩)', type: 'personal', completed: true },
+        { id: 'ch3', text: '보조배터리 및 충전 케이블', type: 'personal', completed: true },
+        { id: 'ch4', text: '상비약 (소화제, 두통약, 방수밴드)', type: 'shared', assignedTo: 'f2', completed: true },
+        { id: 'ch5', text: '삼각대 & 블루투스 리모컨', type: 'shared', assignedTo: 'f3', completed: false },
+        { id: 'ch6', text: '숙소용 멀티탭 1개', type: 'shared', assignedTo: 'f1', completed: false }
+      ]
+    };
+
+    let appState = loadState();
+    let syncConfig = loadSyncConfig();
+    let currentTab = 'schedule';
+    let selectedDay = 1;
+    let expenseFilter = 'all';
+    let checklistFilter = 'all';
+    let selectedVoteFriendId = appState.friends[0]?.id || '';
+    let completedTransfers = {};
+
+    function loadState() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) return JSON.parse(stored);
+      } catch (e) {
+        console.error(e);
+      }
+      return JSON.parse(JSON.stringify(DEFAULT_DATA));
+    }
+
+    function saveState() {
+      appState.updatedAt = Date.now();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      renderHeader();
+      // If auto-push enabled
+      if (syncConfig.gistId && syncConfig.githubToken && syncConfig.autoSync) {
+        debouncePush();
+      }
+    }
+
+    function loadSyncConfig() {
+      const def = { gistId: '', githubToken: '', autoSync: true, syncIntervalSec: 5, lastSyncedAt: null };
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlGist = urlParams.get('gist');
+        const stored = localStorage.getItem(SYNC_KEY);
+        const cfg = stored ? JSON.parse(stored) : def;
+        if (urlGist) {
+          cfg.gistId = urlGist;
+          cfg.autoSync = true;
+        }
+        return cfg;
+      } catch (e) {
+        return def;
+      }
+    }
+
+    function saveSyncConfig(cfg) {
+      syncConfig = cfg;
+      localStorage.setItem(SYNC_KEY, JSON.stringify(syncConfig));
+      renderHeader();
+    }
+
+    /* =========================================================================
+       2. SETTLEMENT & MIN CASH FLOW ALGORITHM (N빵 최소 송금)
+       ========================================================================= */
+    function calculateSettlement(friends, expenses) {
+      const friendMap = new Map(friends.map(f => [f.id, f]));
+      const paidMap = {};
+      const owedMap = {};
+      friends.forEach(f => { paidMap[f.id] = 0; owedMap[f.id] = 0; });
+
+      let totalExpenses = 0;
+
+      expenses.forEach(exp => {
+        const amount = Math.round(exp.amount) || 0;
+        if (amount <= 0) return;
+        totalExpenses += amount;
+
+        paidMap[exp.payerId] = (paidMap[exp.payerId] || 0) + amount;
+
+        const participants = exp.participantIds && exp.participantIds.length > 0
+          ? exp.participantIds.filter(id => friendMap.has(id))
+          : friends.map(f => f.id);
+
+        if (participants.length === 0) return;
+
+        const baseShare = Math.floor(amount / participants.length);
+        const remainder = amount % participants.length;
+
+        participants.forEach((pid, idx) => {
+          const share = baseShare + (idx < remainder ? 1 : 0);
+          owedMap[pid] = (owedMap[pid] || 0) + share;
+        });
+      });
+
+      const balances = friends.map(f => ({
+        id: f.id,
+        net: (paidMap[f.id] || 0) - (owedMap[f.id] || 0)
+      }));
+
+      // Min Cash Flow Greedy Algorithm
+      const transfers = [];
+      const working = balances.map(b => ({ ...b }));
+
+      while (true) {
+        let maxCreditor = working[0];
+        let maxDebtor = working[0];
+
+        for (const b of working) {
+          if (b.net > maxCreditor.net) maxCreditor = b;
+          if (b.net < maxDebtor.net) maxDebtor = b;
+        }
+
+        if (Math.abs(maxCreditor.net) <= 0.01 && Math.abs(maxDebtor.net) <= 0.01) break;
+
+        const transferAmount = Math.min(maxCreditor.net, -maxDebtor.net);
+        if (transferAmount <= 0) break;
+
+        const fromFriend = friendMap.get(maxDebtor.id);
+        const toFriend = friendMap.get(maxCreditor.id);
+
+        if (fromFriend && toFriend) {
+          transfers.push({
+            fromId: fromFriend.id,
+            fromName: fromFriend.name,
+            toId: toFriend.id,
+            toName: toFriend.name,
+            toAccount: toFriend.accountInfo,
+            amount: Math.round(transferAmount)
+          });
+        }
+
+        maxCreditor.net -= transferAmount;
+        maxDebtor.net += transferAmount;
+      }
+
+      const friendSummaries = friends.map(f => ({
+        friend: f,
+        totalPaid: paidMap[f.id] || 0,
+        totalOwed: owedMap[f.id] || 0,
+        netBalance: (paidMap[f.id] || 0) - (owedMap[f.id] || 0)
+      }));
+
+      return {
+        totalExpenses,
+        expenseCount: expenses.length,
+        transfers,
+        friendSummaries
+      };
+    }
+
+    function formatKakaoMessage() {
+      const settlement = calculateSettlement(appState.friends, appState.expenses);
+      let text = `✈️ [${appState.tripInfo.title}] 최종 경비 정산 안내\n`;
+      text += `💰 총 지출: ${settlement.totalExpenses.toLocaleString()}원 (${settlement.expenseCount}건)\n`;
+      text += `👥 참여 멤버: ${appState.friends.length}명\n`;
+      text += `─────────────────────\n`;
+
+      if (settlement.transfers.length === 0) {
+        text += `🎉 모든 정산이 완료되었습니다! (송금할 내역 없음)\n`;
+      } else {
+        text += `🚀 [최소 송금 안내 (누가 누구에게)]\n`;
+        settlement.transfers.forEach((t, i) => {
+          text += `${i + 1}. ${t.fromName} ➡️ ${t.toName}: ${t.amount.toLocaleString()}원\n`;
+          if (t.toAccount) text += `   └ 💳 계좌: ${t.toAccount}\n`;
+        });
+        text += `\n─────────────────────\n`;
+        text += `📊 [멤버별 요약]\n`;
+        settlement.friendSummaries.forEach(s => {
+          if (s.netBalance > 0) {
+            text += `• ${s.friend.name}: 결제 ${s.totalPaid.toLocaleString()}원 (총 ${s.netBalance.toLocaleString()}원 받기)\n`;
+          } else if (s.netBalance < 0) {
+            text += `• ${s.friend.name}: 결제 ${s.totalPaid.toLocaleString()}원 (총 ${Math.abs(s.netBalance).toLocaleString()}원 보내기)\n`;
+          } else {
+            text += `• ${s.friend.name}: 정산 완료 (0원)\n`;
+          }
+        });
+      }
+      text += `─────────────────────\n`;
+      text += `확인 후 송금 부탁드립니다! 🎒`;
+      return text;
+    }
+
+    /* =========================================================================
+       3. TOAST & UTILS
+       ========================================================================= */
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      const text = document.getElementById('toastMessage');
+      if (!toast || !text) return;
+      text.innerText = msg;
+      toast.classList.remove('-translate-y-24', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('-translate-y-24', 'opacity-0');
+      }, 2500);
+    }
+
+    function calculateDDay() {
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const start = new Date(appState.tripInfo.startDate);
+        start.setHours(0, 0, 0, 0);
+        const diff = Math.ceil((start.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        if (diff === 0) return 'D-Day';
+        if (diff > 0) return `D-${diff}`;
+        return `D+${Math.abs(diff)}`;
+      } catch {
+        return 'D-Day';
+      }
+    }
+
+    function calculateTotalDays() {
+      try {
+        const s = new Date(appState.tripInfo.startDate);
+        const e = new Date(appState.tripInfo.endDate);
+        const diff = Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        return isNaN(diff) || diff < 1 ? 3 : diff;
+      } catch {
+        return 3;
+      }
+    }
+
+    /* =========================================================================
+       4. GITHUB GIST SYNC ENGINE
+       ========================================================================= */
+    const GIST_FILENAME = 'travel_trip_data.json';
+    let pushTimeout = null;
+
+    function debouncePush() {
+      if (pushTimeout) clearTimeout(pushTimeout);
+      pushTimeout = setTimeout(() => {
+        pushToGist(false);
+      }, 1500);
+    }
+
+    async function fetchFromGist(silent = false) {
+      if (!syncConfig.gistId) return;
+      if (!silent) showToast('GitHub에서 최신 데이터를 가져오는 중...');
+      try {
+        const headers = { 'Accept': 'application/vnd.github.v3+json' };
+        if (syncConfig.githubToken) headers['Authorization'] = `token ${syncConfig.githubToken}`;
+
+        const res = await fetch(`https://api.github.com/gists/${syncConfig.gistId.trim()}?t=${Date.now()}`, { headers });
+        if (!res.ok) {
+          if (!silent) showToast(`동기화 실패: ${res.statusText}`);
+          return;
+        }
+        const data = await res.json();
+        const file = data.files[GIST_FILENAME] || Object.values(data.files).find(f => f.filename.endsWith('.json'));
+        if (!file || !file.content) return;
+
+        const remoteData = JSON.parse(file.content);
+        if (remoteData.updatedAt > (appState.updatedAt || 0)) {
+          appState = remoteData;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+          renderAll();
+          showToast('🔄 최신 데이터로 동기화되었습니다!');
+        } else if (!silent) {
+          showToast('이미 최신 상태입니다.');
+        }
+        syncConfig.lastSyncedAt = Date.now();
+        renderHeader();
+      } catch (err) {
+        if (!silent) showToast('동기화 네트워크 오류가 발생했습니다.');
+      }
+    }
+
+    async function pushToGist(notify = true) {
+      if (!syncConfig.gistId || !syncConfig.githubToken) {
+        if (notify) showToast('Gist ID와 GitHub Token이 설정되어 있어야 합니다.');
+        return;
+      }
+      if (notify) showToast('GitHub에 저장 중...');
+      try {
+        appState.updatedAt = Date.now();
+        const payload = {
+          description: `[TripSync] ${appState.tripInfo.title}`,
+          files: {
+            [GIST_FILENAME]: { content: JSON.stringify(appState, null, 2) }
+          }
+        };
+        const res = await fetch(`https://api.github.com/gists/${syncConfig.gistId.trim()}`, {
+          method: 'PATCH',
+          headers: {
+            'Accept': 'application/vnd.github.v3+json',
+            'Authorization': `token ${syncConfig.githubToken.trim()}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          syncConfig.lastSyncedAt = Date.now();
+          saveSyncConfig(syncConfig);
+          if (notify) showToast('GitHub에 성공적으로 저장되었습니다!');
+        } else {
+          if (notify) showToast('GitHub 저장에 실패했습니다. 토큰 권한을 확인해주세요.');
+        }
+      } catch (e) {
+        if (notify) showToast('네트워크 오류가 발생했습니다.');
+      }
+    }
+
+    async function createNewGistRoom(token) {
+      try {
+        appState.updatedAt = Date.now();
+        const payload = {
+          description: `[TripSync] ${appState.tripInfo.title}`,
+          public: false,
+          files: {
+            [GIST_FILENAME]: { content: JSON.stringify(appState, null, 2) }
+          }
+        };
+        const res = await fetch(`https://api.github.com/gists`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/vnd.github.v3+json',
+            'Authorization': `token ${token.trim()}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const resData = await res.json();
+          syncConfig.gistId = resData.id;
+          syncConfig.githubToken = token.trim();
+          syncConfig.autoSync = true;
+          syncConfig.lastSyncedAt = Date.now();
+          saveSyncConfig(syncConfig);
+          showToast(`새 방이 생성되었습니다! (ID: ${resData.id.slice(0, 8)}...)`);
+          return resData.id;
+        } else {
+          showToast('Gist 생성 실패: 올바른 Personal Access Token인지 확인해주세요.');
+          return null;
+        }
+      } catch (e) {
+        showToast('Gist 생성 중 오류가 발생했습니다.');
+        return null;
+      }
+    }
+
+    function manualSync() {
+      fetchFromGist(false);
+    }
+
+    function copyShareLink() {
+      let shareUrl = window.location.origin + window.location.pathname;
+      if (syncConfig.gistId) {
+        shareUrl += `?gist=${encodeURIComponent(syncConfig.gistId)}`;
+      }
+      navigator.clipboard.writeText(shareUrl);
+      showToast('초대 링크가 클립보드에 복사되었습니다!');
+    }
+
+    // Auto-polling interval
+    setInterval(() => {
+      if (syncConfig.autoSync && syncConfig.gistId) {
+        fetchFromGist(true);
+      }
+    }, Math.max(3, syncConfig.syncIntervalSec || 5) * 1000);
+
+    /* =========================================================================
+       5. RENDER FUNCTIONS
+       ========================================================================= */
+    function renderHeader() {
+      const emojiEl = document.getElementById('headerEmoji');
+      if (emojiEl) emojiEl.innerText = appState.tripInfo.coverEmoji || '✈️';
+
+      const badge = document.getElementById('syncStatusBadge');
+      if (!badge) return;
+
+      if (syncConfig.gistId) {
+        badge.innerHTML = `
+          <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+          <span class="text-[11px] text-secondary font-bold">LIVE SYNCING</span>
+        `;
+      } else {
+        badge.innerHTML = `
+          <span class="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
+          <span class="text-[11px] text-on-surface-variant font-medium">로컬 저장 모드</span>
+        `;
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.remove('text-primary', 'font-bold');
+        b.classList.add('text-on-surface-variant', 'font-medium');
+        const icon = b.querySelector('.material-symbols-outlined');
+        if (icon) icon.classList.remove('filled');
+      });
+
+      const activeBtn = document.getElementById(`nav-${tab}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-on-surface-variant', 'font-medium');
+        activeBtn.classList.add('text-primary', 'font-bold');
+        const icon = activeBtn.querySelector('.material-symbols-outlined');
+        if (icon) icon.classList.add('filled');
+      }
+
+      if (tab === 'schedule') {
+        document.getElementById('viewSchedule').classList.remove('hidden');
+        renderScheduleView();
+      } else if (tab === 'plan') {
+        document.getElementById('viewPlan').classList.remove('hidden');
+        renderPlanView();
+      } else if (tab === 'expense') {
+        document.getElementById('viewExpense').classList.remove('hidden');
+        renderExpenseView();
+      } else if (tab === 'checklist') {
+        document.getElementById('viewChecklist').classList.remove('hidden');
+        renderChecklistView();
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* --- VIEW 1: SCHEDULE (일정 조율) --- */
+    function renderScheduleView() {
+      const container = document.getElementById('viewSchedule');
+      const dday = calculateDDay();
+
+      let candidateHtml = '';
+      if (appState.datePoll.candidates.length === 0) {
+        candidateHtml = `
+          <div class="p-6 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/30">
+            <p class="text-sm font-semibold text-on-surface">등록된 후보 날짜가 없습니다</p>
+            <p class="text-xs text-on-surface-variant mt-1">친구들과 맞춰볼 여행 일자 후보를 등록해보세요.</p>
+          </div>
+        `;
+      } else {
+        candidateHtml = appState.datePoll.candidates.map(c => {
+          const yesVotes = [];
+          const maybeVotes = [];
+          const noVotes = [];
+          appState.friends.forEach(f => {
+            const v = appState.datePoll.votes[f.id]?.[c.id];
+            if (v === 'yes') yesVotes.push(f);
+            else if (v === 'maybe') maybeVotes.push(f);
+            else if (v === 'no') noVotes.push(f);
+          });
+          const myVote = appState.datePoll.votes[selectedVoteFriendId]?.[c.id];
+
+          return `
+            <div class="flex flex-col gap-2 p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h4 class="text-sm sm:text-base font-bold text-on-surface">${c.dateStr}</h4>
+                  ${c.notes ? `<p class="text-xs text-on-surface-variant mt-0.5">${c.notes}</p>` : ''}
+                </div>
+                <button onclick="deleteCandidate('${c.id}')" class="p-1 text-on-surface-variant hover:text-error" title="삭제">
+                  <span class="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+              </div>
+
+              <div class="flex items-center gap-2 pt-1 text-xs">
+                <span class="text-secondary font-bold flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">check_circle</span> 가능 ${yesVotes.length}명
+                </span>
+                <span class="text-outline-variant">•</span>
+                <span class="text-on-surface-variant flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">help</span> 미정 ${maybeVotes.length}명
+                </span>
+                <span class="text-outline-variant">•</span>
+                <span class="text-tertiary flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">cancel</span> 불가 ${noVotes.length}명
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between pt-2 border-t border-surface-container-high">
+                <div class="flex items-center gap-1">
+                  ${yesVotes.map(f => `<span class="w-5 h-5 rounded-full text-white text-[9px] font-bold flex items-center justify-center" style="background-color: ${f.color}" title="${f.name}">${f.name[0]}</span>`).join('')}
+                </div>
+                <div class="flex items-center gap-1">
+                  <button onclick="voteDate('${selectedVoteFriendId}', '${c.id}', 'yes')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${myVote === 'yes' ? 'bg-secondary text-on-secondary shadow-sm' : 'bg-surface-container text-on-surface-variant hover:bg-secondary-container'}">
+                    가능
+                  </button>
+                  <button onclick="voteDate('${selectedVoteFriendId}', '${c.id}', 'maybe')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${myVote === 'maybe' ? 'bg-primary-container text-on-primary shadow-sm' : 'bg-surface-container text-on-surface-variant hover:bg-surface-variant'}">
+                    미정
+                  </button>
+                  <button onclick="voteDate('${selectedVoteFriendId}', '${c.id}', 'no')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${myVote === 'no' ? 'bg-tertiary text-on-tertiary shadow-sm' : 'bg-surface-container text-on-surface-variant hover:bg-tertiary-fixed'}">
+                    불가
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      container.innerHTML = `
+        <!-- Trip Info Card -->
+        <section class="rounded-2xl bg-surface-container-lowest p-space-lg shadow-sm border border-outline-variant/30 flex items-start justify-between">
+          <div class="flex items-center gap-space-md min-w-0">
+            <div class="w-14 h-14 rounded-2xl bg-primary-fixed text-primary flex items-center justify-center text-3xl shadow-sm shrink-0">
+              ${appState.tripInfo.coverEmoji || '✈️'}
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="px-2 py-0.5 rounded-full bg-primary-container text-on-primary text-[10px] font-bold">${dday}</span>
+                <span class="text-[11px] text-secondary font-bold flex items-center gap-0.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                  동기화 활성
+                </span>
+              </div>
+              <h2 class="text-base sm:text-lg font-bold text-on-surface truncate mt-0.5">${appState.tripInfo.title}</h2>
+              <div class="flex items-center gap-2 text-xs text-on-surface-variant mt-0.5">
+                <span class="flex items-center gap-0.5"><span class="material-symbols-outlined text-[13px]">location_on</span> ${appState.tripInfo.destination}</span>
+                <span>•</span>
+                <span>${appState.tripInfo.startDate} ~ ${appState.tripInfo.endDate}</span>
+              </div>
+            </div>
+          </div>
+          <button onclick="openModal('tripEditModal')" class="p-2 rounded-full hover:bg-surface-container text-on-surface-variant" title="수정">
+            <span class="material-symbols-outlined text-[18px]">edit</span>
+          </button>
+        </section>
+
+        <!-- AI Smart Merge & Conflict Warning -->
+        <section class="rounded-2xl bg-tertiary-fixed/30 p-4 shadow-sm flex items-start gap-3 border border-tertiary/20">
+          <div class="w-9 h-9 rounded-xl bg-tertiary text-on-tertiary flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[20px] filled">warning</span>
+          </div>
+          <div class="flex flex-col min-w-0 flex-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs sm:text-sm font-bold text-on-tertiary-fixed">오후 동선 이동 거리 분석</span>
+              <span class="text-[11px] font-bold text-tertiary">실시간 조율</span>
+            </div>
+            <p class="text-xs text-on-surface-variant mt-0.5 leading-relaxed">
+              친구들이 투표한 날짜 중 '가능' 인원이 가장 많은 날이 대표 여행일로 자동 반영됩니다.
+            </p>
+          </div>
+        </section>
+
+        <!-- Date Poll -->
+        <section class="flex flex-col gap-space-md">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base font-bold text-on-surface">여행 날짜 투표</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            </div>
+            <button onclick="openModal('addCandidateModal')" class="flex items-center gap-1 text-primary text-xs font-bold hover:underline">
+              <span class="material-symbols-outlined text-[16px]">add</span>
+              <span>후보 일정 추가</span>
+            </button>
+          </div>
+
+          <!-- Vote User Selector -->
+          <div class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/30 overflow-x-auto no-scrollbar">
+            <span class="text-xs font-semibold text-on-surface shrink-0">투표 멤버:</span>
+            <div class="flex items-center gap-1.5">
+              ${appState.friends.map(f => `
+                <button onclick="setVoteFriend('${f.id}')" class="px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 transition-all ${selectedVoteFriendId === f.id ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-container text-on-surface-variant'}">
+                  <span class="w-2 h-2 rounded-full" style="background-color: ${selectedVoteFriendId === f.id ? '#ffffff' : f.color}"></span>
+                  <span>${f.name}</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-space-sm">
+            ${candidateHtml}
+          </div>
+        </section>
+
+        <!-- Friends Management -->
+        <section class="flex flex-col gap-space-md">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base font-bold text-on-surface">함께하는 친구들</span>
+              <span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-xs font-semibold">${appState.friends.length}명</span>
+            </div>
+            <button onclick="openModal('addFriendModal')" class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-on-primary text-xs font-bold shadow-sm">
+              <span class="material-symbols-outlined text-[15px]">person_add</span>
+              <span>친구 추가</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+            ${appState.friends.map(f => `
+              <div class="flex items-center justify-between p-space-md rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0" style="background-color: ${f.color || '#006194'}">
+                    ${f.name[0]}
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="text-sm font-bold text-on-surface truncate">${f.name}</span>
+                    <span class="text-xs text-on-surface-variant truncate font-mono">${f.accountInfo || '계좌 미입력'}</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <button onclick="editFriend('${f.id}')" class="p-1 rounded text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[16px]">edit</span></button>
+                  <button onclick="deleteFriend('${f.id}')" class="p-1 rounded text-on-surface-variant hover:text-error"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </section>
+      `;
+    }
+
+    /* --- VIEW 2: PLAN (여행 계획) --- */
+    const PLAN_CATEGORIES = {
+      meal: { label: '식사', icon: 'ramen_dining' },
+      cafe: { label: '카페', icon: 'local_cafe' },
+      sightseeing: { label: '관광', icon: 'photo_camera' },
+      stay: { label: '숙소', icon: 'apartment' },
+      transport: { label: '이동', icon: 'directions_car' },
+      activity: { label: '액티비티', icon: 'attractions' },
+      shopping: { label: '쇼핑', icon: 'shopping_bag' },
+      other: { label: '기타', icon: 'place' }
+    };
+
+    function renderPlanView() {
+      const container = document.getElementById('viewPlan');
+      const totalDays = calculateTotalDays();
+      const dayPlans = appState.plans.filter(p => p.day === selectedDay).sort((a, b) => a.time.localeCompare(b.time));
+      const dayCost = dayPlans.reduce((s, p) => s + (p.costEstimate || 0), 0);
+
+      let timelineHtml = '';
+      if (dayPlans.length === 0) {
+        timelineHtml = `
+          <div class="p-8 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/30">
+            <div class="w-12 h-12 mx-auto mb-2 rounded-2xl bg-surface-container-high text-primary flex items-center justify-center">
+              <span class="material-symbols-outlined text-[26px]">map</span>
+            </div>
+            <h4 class="text-sm font-bold text-on-surface">Day ${selectedDay} 일정이 아직 없습니다</h4>
+            <p class="text-xs text-on-surface-variant mt-1 mb-3">가고 싶은 맛집, 명소, 숙소 일정을 등록해보세요!</p>
+            <button onclick="openModal('planModal')" class="px-4 py-2 rounded-full bg-primary text-on-primary text-xs font-bold shadow-sm">
+              일정 등록하기
+            </button>
+          </div>
+        `;
+      } else {
+        timelineHtml = `
+          <div class="relative pl-6 space-y-space-sm before:content-[''] before:absolute before:left-2.5 before:top-4 before:bottom-4 before:w-0.5 before:bg-surface-container-highest">
+            ${dayPlans.map(plan => {
+          const cat = PLAN_CATEGORIES[plan.category] || PLAN_CATEGORIES.other;
+          return `
+                <div class="relative rounded-2xl p-space-md border transition-all ${plan.completed ? 'bg-surface-container-low/70 border-outline-variant/30 opacity-70' : 'bg-surface-container-lowest border-outline-variant/40 shadow-sm'}">
+                  <button onclick="togglePlanCompleted('${plan.id}')" class="absolute -left-[29px] top-5 w-5 h-5 rounded-full flex items-center justify-center transition-all bg-surface ${plan.completed ? 'text-secondary ring-2 ring-secondary' : 'text-outline-variant ring-2 ring-surface-container-high hover:text-primary'}" title="${plan.completed ? '미완료로 변경' : '방문 완료 표시'}">
+                    <span class="material-symbols-outlined text-[16px] filled">${plan.completed ? 'check_circle' : 'circle'}</span>
+                  </button>
+
+                  <div class="flex flex-col gap-2">
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="flex items-center gap-2 flex-wrap min-w-0">
+                        <span class="px-2 py-0.5 rounded-full bg-primary-fixed text-primary text-[11px] font-bold flex items-center gap-1">
+                          <span class="material-symbols-outlined text-[12px]">schedule</span> ${plan.time}
+                        </span>
+                        <span class="px-2 py-0.5 rounded-lg bg-surface-container text-on-surface-variant text-[11px] font-semibold flex items-center gap-1">
+                          <span class="material-symbols-outlined text-[13px]">${cat.icon}</span> ${cat.label}
+                        </span>
+                        <h4 class="text-sm font-bold text-on-surface truncate ${plan.completed ? 'line-through text-on-surface-variant' : ''}">${plan.title}</h4>
+                      </div>
+                      <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="editPlan('${plan.id}')" class="p-1 text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[16px]">edit</span></button>
+                        <button onclick="deletePlan('${plan.id}')" class="p-1 text-on-surface-variant hover:text-error"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+                      </div>
+                    </div>
+
+                    ${plan.location ? `
+                      <div class="flex items-center gap-1 text-xs text-on-surface-variant">
+                        <span class="material-symbols-outlined text-[13px] text-primary">location_on</span>
+                        <span class="truncate">${plan.location}</span>
+                        ${plan.placeUrl ? `<a href="${plan.placeUrl}" target="_blank" class="text-primary font-bold hover:underline ml-1">지도</a>` : ''}
+                      </div>
+                    ` : ''}
+
+                    ${plan.memo ? `<p class="text-xs text-on-surface-variant bg-surface-container-low p-2 rounded-xl">${plan.memo}</p>` : ''}
+
+                    ${plan.costEstimate ? `
+                      <div class="text-right text-xs text-on-surface-variant pt-1 border-t border-surface-container-high">
+                        예상 경비: <strong class="text-on-surface font-bold">${plan.costEstimate.toLocaleString()}원</strong>
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+              `;
+        }).join('')}
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <!-- Plan Header -->
+        <section class="rounded-2xl bg-surface-container-low p-space-lg shadow-sm border border-outline-variant/30 flex items-start justify-between">
+          <div>
+            <div class="inline-flex items-center gap-1 bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full text-[11px] font-bold mb-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+              동선 완성 중
+            </div>
+            <h2 class="text-base sm:text-lg font-bold text-on-surface">일차별 확정 여행 코스 🗺️</h2>
+            <p class="text-xs text-on-surface-variant mt-0.5">총 ${appState.plans.length}곳의 스팟 등록됨</p>
+          </div>
+          <button onclick="openModal('planModal')" class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-on-primary text-xs font-bold shadow-sm active:scale-95 transition-all">
+            <span class="material-symbols-outlined text-[16px]">add_location_alt</span>
+            <span>새 일정 추가</span>
+          </button>
+        </section>
+
+        <!-- Day Pills -->
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          ${Array.from({ length: Math.max(3, totalDays) }, (_, i) => i + 1).map(d => {
+        const count = appState.plans.filter(p => p.day === d).length;
+        const active = selectedDay === d;
+        return `
+              <button onclick="setSelectedDay(${d})" class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all active:scale-95 ${active ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}">
+                <span>Day ${d}</span>
+                ${count > 0 ? `<span class="text-[10px] px-1.5 py-0.2 rounded-full font-bold ${active ? 'bg-primary-container text-on-primary' : 'bg-surface-container-highest text-primary'}">${count}</span>` : ''}
+              </button>
+            `;
+      }).join('')}
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-on-surface-variant px-1">
+          <div><strong class="text-on-surface font-bold">Day ${selectedDay}</strong> 코스 (${dayPlans.length}개)</div>
+          <div>예상 지출: <strong class="text-primary font-bold">${dayCost.toLocaleString()}원</strong></div>
+        </div>
+
+        <div class="flex flex-col gap-space-sm">
+          ${timelineHtml}
+        </div>
+      `;
+    }
+
+    /* --- VIEW 3: EXPENSE (경비 정산 & N분의 1 최소 송금) --- */
+    const EXPENSE_CATEGORIES = {
+      meal: { icon: 'ramen_dining', label: '식비' },
+      cafe: { icon: 'local_cafe', label: '카페' },
+      stay: { icon: 'apartment', label: '숙소' },
+      transport: { icon: 'subway', label: '교통' },
+      activity: { icon: 'attractions', label: '관광' },
+      shopping: { icon: 'shopping_bag', label: '쇼핑' },
+      snack: { icon: 'lunch_dining', label: '야식·주류' },
+      other: { icon: 'receipt_long', label: '기타' }
+    };
+
+    function renderExpenseView() {
+      const container = document.getElementById('viewExpense');
+      const settlement = calculateSettlement(appState.friends, appState.expenses);
+      const perShare = appState.friends.length > 0 ? Math.round(settlement.totalExpenses / appState.friends.length) : 0;
+      const friendMap = new Map(appState.friends.map(f => [f.id, f]));
+
+      const filtered = appState.expenses.filter(e => {
+        if (expenseFilter === 'all') return true;
+        if (expenseFilter === 'food') return e.category === 'meal' || e.category === 'cafe' || e.category === 'snack';
+        if (expenseFilter === 'stay') return e.category === 'stay';
+        if (expenseFilter === 'transit') return e.category === 'transport';
+        if (expenseFilter === 'play') return e.category === 'activity' || e.category === 'shopping';
+        return true;
+      });
+
+      container.innerHTML = `
+        <!-- Hero Ledger Card (TripSync page4.html) -->
+        <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary-container to-primary text-on-primary p-space-lg shadow-md">
+          <div class="absolute -right-8 -bottom-8 w-36 h-36 rounded-full bg-surface-container-lowest/10 blur-xl pointer-events-none"></div>
+          <div class="relative z-10 flex flex-col gap-space-md">
+            <div class="flex justify-between items-start">
+              <div class="flex flex-col">
+                <span class="text-xs text-primary-fixed opacity-90 font-medium">현재까지 정산할 총 공동 경비</span>
+                <div class="flex items-baseline gap-1 mt-0.5">
+                  <span class="text-2xl sm:text-3xl font-extrabold tracking-tight">${settlement.totalExpenses.toLocaleString()}</span>
+                  <span class="text-sm font-semibold">원</span>
+                </div>
+                <span class="text-xs text-primary-fixed-dim mt-0.5">총 ${settlement.expenseCount}건 기록됨</span>
+              </div>
+              <button onclick="openModal('expenseModal')" class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container-lowest text-primary text-xs font-bold shadow-sm active:scale-95 transition-all">
+                <span class="material-symbols-outlined text-[16px]">add</span>
+                <span>지출 기록</span>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-lowest/15 backdrop-blur-md">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px] text-secondary-container">group</span>
+                <div class="flex flex-col">
+                  <span class="text-[11px] text-primary-fixed font-medium">1인당 균등 분할액 (1/N)</span>
+                  <span class="text-sm font-bold text-on-primary">${perShare.toLocaleString()}원</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container text-[11px] font-bold">
+                <span class="material-symbols-outlined text-[13px]">auto_fix_high</span>
+                <span>최소 송금 계산</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Member Balances -->
+        <section class="flex flex-col gap-space-sm">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base font-bold text-on-surface">멤버별 정산 현황</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+            </div>
+            <span class="text-xs text-on-surface-variant">결제액 대비 차액 기준</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            ${settlement.friendSummaries.map(s => {
+        const isCreditor = s.netBalance > 0;
+        const isSettled = s.netBalance === 0;
+        return `
+                <div class="flex flex-col justify-between p-3 rounded-2xl bg-surface-container-lowest shadow-sm border border-outline-variant/30">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center shrink-0" style="background-color: ${s.friend.color || '#006194'}">
+                      ${s.friend.name[0]}
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                      <span class="text-xs font-bold text-on-surface truncate">${s.friend.name}</span>
+                      <span class="text-[10px] text-on-surface-variant truncate">결제 ${s.totalPaid.toLocaleString()}원</span>
+                    </div>
+                  </div>
+                  <div class="mt-2 flex flex-col">
+                    ${isSettled ? `
+                      <span class="text-[10px] text-on-surface-variant font-medium">정산 완료</span>
+                      <span class="text-sm font-bold text-on-surface">0원</span>
+                    ` : isCreditor ? `
+                      <span class="text-[10px] text-secondary font-bold">받을 돈</span>
+                      <span class="text-sm font-bold text-secondary">+${s.netBalance.toLocaleString()}원</span>
+                    ` : `
+                      <span class="text-[10px] text-tertiary font-bold">보낼 돈</span>
+                      <span class="text-sm font-bold text-tertiary">-${Math.abs(s.netBalance).toLocaleString()}원</span>
+                    `}
+                    <span class="text-[9px] text-on-surface-variant">부담액: ${s.totalOwed.toLocaleString()}원</span>
+                  </div>
+                </div>
+              `;
+      }).join('')}
+          </div>
+        </section>
+
+        <!-- Minimum Cash Flow Route Recommendation -->
+        <section class="flex flex-col gap-space-sm p-4 rounded-2xl bg-surface-container-low border border-outline-variant/30">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[18px] text-primary">route</span>
+              <span class="text-xs sm:text-sm font-bold text-on-surface">최소 송금 경로 추천</span>
+              <span class="px-1.5 py-0.2 rounded bg-primary-fixed text-primary text-[10px] font-bold">총 ${settlement.transfers.length}회 완료</span>
+            </div>
+            <span class="text-xs text-secondary font-bold">맞송금 없이 완료</span>
+          </div>
+
+          <p class="text-xs text-on-surface-variant">
+            복잡하게 서로 주고받지 않고, 아래 순서대로 송금하면 정산이 한 번에 끝납니다!
+          </p>
+
+          <div class="flex flex-col gap-2 pt-1">
+            ${settlement.transfers.length === 0 ? `
+              <div class="p-3 text-center text-xs font-semibold text-on-surface-variant bg-surface-container-lowest rounded-xl">
+                🎉 모든 정산이 완벽하게 끝났습니다!
+              </div>
+            ` : settlement.transfers.map((t, idx) => {
+        const key = `${t.fromId}_${t.toId}_${idx}`;
+        const isDone = completedTransfers[key];
+        return `
+                <div class="flex flex-col gap-1 p-2.5 rounded-xl ${isDone ? 'bg-surface-container/60 opacity-60' : 'bg-surface-container-lowest shadow-sm'}">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <button onclick="toggleTransferDone('${key}')" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isDone ? 'bg-secondary text-on-secondary' : 'bg-surface-container text-primary'}">
+                        ${isDone ? '✓' : idx + 1}
+                      </button>
+                      <span class="text-xs text-on-surface ${isDone ? 'line-through text-on-surface-variant' : ''}">
+                        <strong>${t.fromName}</strong> ➡️ <strong class="text-primary">${t.toName}</strong>
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-bold text-primary">${t.amount.toLocaleString()}원</span>
+                      <button onclick="copyAccountText('${t.toAccount || t.toName + '님에게 송금'}')" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-surface-container-high text-on-surface hover:bg-surface-variant">
+                        복사
+                      </button>
+                    </div>
+                  </div>
+                  ${t.toAccount ? `
+                    <div class="pl-7 text-[10px] text-on-surface-variant flex items-center gap-1 font-mono">
+                      <span class="material-symbols-outlined text-[12px]">credit_card</span>
+                      ${t.toAccount}
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+      }).join('')}
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <button onclick="copyKakaoSummary()" class="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-on-primary text-xs font-bold shadow-sm active:scale-95 transition-all">
+              <span class="material-symbols-outlined text-[16px]">send</span>
+              <span>단톡방에 정산 요청</span>
+            </button>
+            <button onclick="copyTransferList()" class="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-surface-container-high text-on-surface text-xs font-semibold hover:bg-surface-variant transition-colors">
+              <span class="material-symbols-outlined text-[16px]">content_copy</span>
+              <span>송금 리스트 복사</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Itemized Timeline -->
+        <section class="flex flex-col gap-space-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-base font-bold text-on-surface">지출 내역 타임라인</span>
+            <span class="text-xs text-on-surface-variant">총 ${appState.expenses.length}건</span>
+          </div>
+
+          <!-- Category Filter -->
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+            <button onclick="setExpenseFilter('all')" class="px-3 py-1 rounded-full text-xs font-bold ${expenseFilter === 'all' ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}">전체</button>
+            <button onclick="setExpenseFilter('food')" class="px-3 py-1 rounded-full text-xs font-bold ${expenseFilter === 'food' ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}">식비·카페</button>
+            <button onclick="setExpenseFilter('stay')" class="px-3 py-1 rounded-full text-xs font-bold ${expenseFilter === 'stay' ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}">숙소</button>
+            <button onclick="setExpenseFilter('transit')" class="px-3 py-1 rounded-full text-xs font-bold ${expenseFilter === 'transit' ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}">교통</button>
+            <button onclick="setExpenseFilter('play')" class="px-3 py-1 rounded-full text-xs font-bold ${expenseFilter === 'play' ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}">관광·쇼핑</button>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            ${filtered.length === 0 ? `
+              <div class="p-6 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/30 text-xs text-on-surface-variant">
+                지출 내역이 없습니다.
+              </div>
+            ` : filtered.map(exp => {
+        const payer = friendMap.get(exp.payerId);
+        const cat = EXPENSE_CATEGORIES[exp.category] || EXPENSE_CATEGORIES.other;
+        const participants = exp.participantIds?.map(id => friendMap.get(id)).filter(Boolean) || appState.friends;
+        const unit = participants.length > 0 ? Math.round(exp.amount / participants.length) : exp.amount;
+
+        return `
+                <div class="flex flex-col gap-2 p-3 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm">
+                  <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-9 h-9 rounded-xl bg-surface-container-high text-primary flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">${cat.icon}</span>
+                      </div>
+                      <div class="flex flex-col min-w-0">
+                        <span class="text-xs sm:text-sm font-bold text-on-surface truncate">${exp.title}</span>
+                        <span class="text-[11px] text-on-surface-variant">${exp.date} ${exp.location ? `• ${exp.location}` : ''}</span>
+                      </div>
+                    </div>
+                    <div class="flex flex-col items-end shrink-0">
+                      <span class="text-sm font-bold text-on-surface">${exp.amount.toLocaleString()}원</span>
+                      <span class="text-[10px] text-on-surface-variant">1인 ${unit.toLocaleString()}원</span>
+                    </div>
+                  </div>
+
+                  ${exp.memo ? `<div class="px-2.5 py-1 rounded bg-surface-container-low text-[11px] text-on-surface-variant">${exp.memo}</div>` : ''}
+
+                  <div class="flex items-center justify-between pt-1.5 border-t border-surface-container-high">
+                    <div class="flex items-center gap-1.5 text-[11px]">
+                      <span class="font-bold text-primary">결제: ${payer?.name || '알수없음'}</span>
+                      <span class="text-outline-variant">•</span>
+                      <span class="text-on-surface-variant">${participants.length}명 분담</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <div class="flex -space-x-1">
+                        ${participants.slice(0, 4).map(p => `<span class="w-4 h-4 rounded-full text-white text-[8px] font-bold flex items-center justify-center ring-1 ring-white" style="background-color: ${p.color}">${p.name[0]}</span>`).join('')}
+                      </div>
+                      <button onclick="editExpense('${exp.id}')" class="p-1 text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[15px]">edit</span></button>
+                      <button onclick="deleteExpense('${exp.id}')" class="p-1 text-on-surface-variant hover:text-error"><span class="material-symbols-outlined text-[15px]">delete</span></button>
+                    </div>
+                  </div>
+                </div>
+              `;
+      }).join('')}
+          </div>
+        </section>
+      `;
+    }
+
+    /* --- VIEW 4: CHECKLIST (체크리스트) --- */
+    function renderChecklistView() {
+      const container = document.getElementById('viewChecklist');
+      const filtered = appState.checklists.filter(c => {
+        if (checklistFilter === 'all') return true;
+        return c.type === checklistFilter;
+      });
+      const completedCount = appState.checklists.filter(c => c.completed).length;
+      const progress = appState.checklists.length > 0 ? Math.round((completedCount / appState.checklists.length) * 100) : 0;
+      const friendMap = new Map(appState.friends.map(f => [f.id, f]));
+
+      container.innerHTML = `
+        <section class="bg-surface-container-lowest rounded-2xl p-space-lg border border-outline-variant/30 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="p-1.5 rounded-xl bg-primary-fixed text-primary flex items-center justify-center">
+                <span class="material-symbols-outlined text-[20px]">checklist_rtl</span>
+              </span>
+              <h3 class="text-base sm:text-lg font-bold text-on-surface">여행 준비물 체크리스트</h3>
+            </div>
+            <p class="text-xs text-on-surface-variant mt-1">공용 짐과 개인 소지품을 꼼꼼하게 챙겨보세요.</p>
+          </div>
+          <div class="sm:w-56 bg-surface-container-low p-3 rounded-2xl border border-outline-variant/20">
+            <div class="flex items-center justify-between text-xs font-bold mb-1">
+              <span class="text-on-surface-variant">준비율</span>
+              <span class="text-primary font-bold">${progress}% (${completedCount}/${appState.checklists.length})</span>
+            </div>
+            <div class="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
+              <div class="h-full bg-primary rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Quick Add -->
+        <form onsubmit="handleQuickAddChecklist(event)" class="bg-surface-container-lowest rounded-2xl p-3 border border-outline-variant/30 shadow-sm flex gap-2">
+          <input type="text" id="newCheckText" placeholder="새 준비물 추가 (예: 상비약, 멀티탭...)" class="flex-1 p-2 rounded-xl border border-outline-variant bg-surface text-xs sm:text-sm focus:outline-none focus:border-primary" />
+          <select id="newCheckType" class="p-2 rounded-xl border border-outline-variant bg-surface text-xs font-semibold">
+            <option value="shared">공용</option>
+            <option value="personal">개인</option>
+          </select>
+          <button type="submit" class="px-3.5 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold shrink-0">추가</button>
+        </form>
+
+        <!-- Filter Chips -->
+        <div class="flex items-center gap-1.5">
+          <button onclick="setChecklistFilter('all')" class="px-3 py-1 rounded-full text-xs font-bold ${checklistFilter === 'all' ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}">전체</button>
+          <button onclick="setChecklistFilter('shared')" class="px-3 py-1 rounded-full text-xs font-bold ${checklistFilter === 'shared' ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}">👥 공용 짐</button>
+          <button onclick="setChecklistFilter('personal')" class="px-3 py-1 rounded-full text-xs font-bold ${checklistFilter === 'personal' ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}">👤 개인 짐</button>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          ${filtered.length === 0 ? `
+            <div class="p-6 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/30 text-xs text-on-surface-variant">등록된 준비물이 없습니다.</div>
+          ` : filtered.map(item => {
+        const assigned = friendMap.get(item.assignedTo);
+        return `
+              <div class="bg-surface-container-lowest rounded-2xl p-3 border transition-all flex items-center justify-between gap-3 shadow-sm ${item.completed ? 'opacity-70 bg-surface-container-low/60 border-outline-variant/30' : 'border-outline-variant/40'}">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <button onclick="toggleChecklistDone('${item.id}')" class="shrink-0 ${item.completed ? 'text-secondary' : 'text-outline hover:text-primary'}">
+                    <span class="material-symbols-outlined text-[22px] filled">${item.completed ? 'check_circle' : 'radio_button_unchecked'}</span>
+                  </button>
+                  <div class="min-w-0">
+                    <span class="text-xs sm:text-sm font-semibold truncate block ${item.completed ? 'line-through text-on-surface-variant' : 'text-on-surface'}">${item.text}</span>
+                    <div class="flex items-center gap-1.5 text-[10px] text-on-surface-variant mt-0.5">
+                      <span class="px-1.5 py-0.2 rounded bg-surface-container font-medium">${item.type === 'shared' ? '공용' : '개인'}</span>
+                      ${assigned ? `<span class="font-bold text-on-surface" style="color: ${assigned.color}">${assigned.name} 담당</span>` : ''}
+                    </div>
+                  </div>
+                </div>
+                <button onclick="deleteChecklist('${item.id}')" class="p-1 text-outline-variant hover:text-error"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+              </div>
+            `;
+      }).join('')}
+        </div>
+      `;
+    }
+
+    function renderAll() {
+      renderHeader();
+      if (currentTab === 'schedule') renderScheduleView();
+      else if (currentTab === 'plan') renderPlanView();
+      else if (currentTab === 'expense') renderExpenseView();
+      else if (currentTab === 'checklist') renderChecklistView();
+    }
+
+    /* =========================================================================
+       6. ACTIONS & INTERACTIONS
+       ========================================================================= */
+    function setVoteFriend(fid) {
+      selectedVoteFriendId = fid;
+      renderScheduleView();
+    }
+
+    function voteDate(friendId, candidateId, status) {
+      if (!appState.datePoll.votes[friendId]) appState.datePoll.votes[friendId] = {};
+      appState.datePoll.votes[friendId][candidateId] = status;
+      saveState();
+      renderScheduleView();
+    }
+
+    function deleteCandidate(cid) {
+      if (!confirm('후보 일정을 삭제하시겠습니까?')) return;
+      appState.datePoll.candidates = appState.datePoll.candidates.filter(c => c.id !== cid);
+      Object.keys(appState.datePoll.votes).forEach(fid => {
+        delete appState.datePoll.votes[fid]?.[cid];
+      });
+      saveState();
+      renderScheduleView();
+    }
+
+    function deleteFriend(fid) {
+      if (!confirm('친구를 삭제하시겠습니까? 관련 지출 및 투표 내역에서도 제외됩니다.')) return;
+      appState.friends = appState.friends.filter(f => f.id !== fid);
+      saveState();
+      renderAll();
+    }
+
+    function setSelectedDay(d) {
+      selectedDay = d;
+      renderPlanView();
+    }
+
+    function togglePlanCompleted(pid) {
+      const p = appState.plans.find(item => item.id === pid);
+      if (p) p.completed = !p.completed;
+      saveState();
+      renderPlanView();
+    }
+
+    function deletePlan(pid) {
+      if (!confirm('일정을 삭제하시겠습니까?')) return;
+      appState.plans = appState.plans.filter(p => p.id !== pid);
+      saveState();
+      renderPlanView();
+    }
+
+    function setExpenseFilter(f) {
+      expenseFilter = f;
+      renderExpenseView();
+    }
+
+    function toggleTransferDone(key) {
+      completedTransfers[key] = !completedTransfers[key];
+      renderExpenseView();
+    }
+
+    function copyAccountText(text) {
+      navigator.clipboard.writeText(text);
+      showToast('계좌/송금 정보가 복사되었습니다!');
+    }
+
+    function copyKakaoSummary() {
+      const msg = formatKakaoMessage();
+      navigator.clipboard.writeText(msg);
+      showToast('카카오톡/단톡방 공유용 정산서가 복사되었습니다!');
+      if (window.confetti) {
+        window.confetti({ particleCount: 60, spread: 60, origin: { y: 0.8 } });
+      }
+    }
+
+    function copyTransferList() {
+      const s = calculateSettlement(appState.friends, appState.expenses);
+      const text = s.transfers.map((t, i) => `${i + 1}. ${t.fromName} -> ${t.toName}: ${t.amount.toLocaleString()}원 (${t.toAccount || '계좌문의'})`).join('\n');
+      navigator.clipboard.writeText(text);
+      showToast('송금 리스트가 복사되었습니다!');
+    }
+
+    function deleteExpense(eid) {
+      if (!confirm('지출 내역을 삭제하시겠습니까?')) return;
+      appState.expenses = appState.expenses.filter(e => e.id !== eid);
+      saveState();
+      renderExpenseView();
+    }
+
+    function setChecklistFilter(f) {
+      checklistFilter = f;
+      renderChecklistView();
+    }
+
+    function handleQuickAddChecklist(e) {
+      e.preventDefault();
+      const input = document.getElementById('newCheckText');
+      const type = document.getElementById('newCheckType');
+      if (!input || !input.value.trim()) return;
+      appState.checklists.push({
+        id: `ch_${Date.now()}`,
+        text: input.value.trim(),
+        type: type.value,
+        completed: false
+      });
+      input.value = '';
+      saveState();
+      renderChecklistView();
+    }
+
+    function toggleChecklistDone(cid) {
+      const item = appState.checklists.find(c => c.id === cid);
+      if (item) item.completed = !item.completed;
+      saveState();
+      renderChecklistView();
+    }
+
+    function deleteChecklist(cid) {
+      if (!confirm('준비물을 삭제하시겠습니까?')) return;
+      appState.checklists = appState.checklists.filter(c => c.id !== cid);
+      saveState();
+      renderChecklistView();
+    }
+
+    /* =========================================================================
+       7. MODALS
+       ========================================================================= */
+    function closeModal() {
+      document.getElementById('modalsRoot').innerHTML = '';
+    }
+
+    function openModal(type, data = null) {
+      const root = document.getElementById('modalsRoot');
+
+      if (type === 'tripEditModal') {
+        root.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-surface-container-lowest rounded-3xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/30 space-y-4">
+              <div class="flex items-center justify-between pb-2 border-b border-surface-container-high">
+                <h3 class="text-base font-bold text-on-surface">여행 기본 정보 수정</h3>
+                <button onclick="closeModal()" class="p-1 text-on-surface-variant"><span class="material-symbols-outlined">close</span></button>
+              </div>
+              <form onsubmit="handleSaveTripInfo(event)" class="space-y-3">
+                <div class="grid grid-cols-4 gap-2">
+                  <input type="text" id="m_emoji" value="${appState.tripInfo.coverEmoji || '✈️'}" class="p-2 text-center text-xl rounded-xl border border-outline-variant bg-surface" placeholder="이모지" />
+                  <input type="text" id="m_title" value="${appState.tripInfo.title}" class="col-span-3 p-2 rounded-xl border border-outline-variant bg-surface text-sm" placeholder="여행 제목" required />
+                </div>
+                <input type="text" id="m_dest" value="${appState.tripInfo.destination}" class="w-full p-2 rounded-xl border border-outline-variant bg-surface text-sm" placeholder="여행지 (예: 후쿠오카)" required />
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="date" id="m_start" value="${appState.tripInfo.startDate}" class="p-2 rounded-xl border border-outline-variant bg-surface text-xs" required />
+                  <input type="date" id="m_end" value="${appState.tripInfo.endDate}" class="p-2 rounded-xl border border-outline-variant bg-surface text-xs" required />
+                </div>
+                <textarea id="m_memo" rows="2" class="w-full p-2 rounded-xl border border-outline-variant bg-surface text-xs resize-none" placeholder="여행 메모">${appState.tripInfo.memo || ''}</textarea>
+                <div class="flex justify-end gap-2 pt-2">
+                  <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-bold text-on-surface-variant">취소</button>
+                  <button type="submit" class="px-5 py-2 text-xs font-bold rounded-xl bg-primary text-on-primary">저장 완료</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        `;
+      } else if (type === 'addCandidateModal') {
+        root.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-surface-container-lowest rounded-3xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/30 space-y-4">
+              <div class="flex items-center justify-between pb-2 border-b border-surface-container-high">
+                <h3 class="text-base font-bold text-on-surface">여행 후보 날짜 추가</h3>
+                <button onclick="closeModal()" class="p-1 text-on-surface-variant"><span class="material-symbols-outlined">close</span></button>
+              </div>
+              <form onsubmit="handleSaveCandidate(event)" class="space-y-3">
+                <input type="text" id="m_cand_date" placeholder="예: 2026-07-15 ~ 07-18 (수~토)" class="w-full p-2.5 rounded-xl border border-outline-variant bg-surface text-sm" required autofocus />
+                <input type="text" id="m_cand_notes" placeholder="메모 (예: 항공권 저렴, 주말 포함 등)" class="w-full p-2.5 rounded-xl border border-outline-variant bg-surface text-sm" />
+                <div class="flex justify-end gap-2 pt-2">
+                  <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-bold text-on-surface-variant">취소</button>
+                  <button type="submit" class="px-5 py-2 text-xs font-bold rounded-xl bg-primary text-on-primary">추가하기</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        `;
+      } else if (type === 'addFriendModal' || type === 'editFriendModal') {
+        const friend = data ? appState.friends.find(f => f.id === data) : null;
+        root.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-surface-container-lowest rounded-3xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/30 space-y-4">
+              <div class="flex items-center justify-between pb-2 border-b border-surface-container-high">
+                <h3 class="text-base font-bold text-on-surface">${friend ? '친구 정보 수정' : '새 친구 추가'}</h3>
+                <button onclick="closeModal()" class="p-1 text-on-surface-variant"><span class="material-symbols-outlined">close</span></button>
+              </div>
+              <form onsubmit="handleSaveFriend(event, '${friend ? friend.id : ''}')" class="space-y-3">
+                <input type="text" id="m_f_name" value="${friend ? friend.name : ''}" placeholder="이름 (닉네임)" class="w-full p-2.5 rounded-xl border border-outline-variant bg-surface text-sm" required autofocus />
+                <div>
+                  <label class="block text-xs font-bold text-on-surface mb-1">대표 아바타 색상</label>
+                  <input type="color" id="m_f_color" value="${friend ? friend.color : '#006194'}" class="w-12 h-9 p-0 border-0 rounded cursor-pointer" />
+                </div>
+                <input type="text" id="m_f_acc" value="${friend ? (friend.accountInfo || '') : ''}" placeholder="정산 받을 계좌/토스링크 (선택)" class="w-full p-2.5 rounded-xl border border-outline-variant bg-surface text-sm font-mono" />
+                <div class="flex justify-end gap-2 pt-2">
+                  <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-bold text-on-surface-variant">취소</button>
+                  <button type="submit" class="px-5 py-2 text-xs font-bold rounded-xl bg-primary text-on-primary">${friend ? '수정 완료' : '친구 추가'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        `;
+      } else if (type === 'planModal') {
+        const plan = data ? appState.plans.find(p => p.id === data) : null;
+        const totalDays = calculateTotalDays();
+        root.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <div class="bg-surface-container-lowest rounded-3xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/30 space-y-4 my-6">
+              <div class="flex items-center justify-between pb-2 border-b border-surface-container-high">
+                <h3 class="text-base font-bold text-on-surface">${plan ? '일정 수정' : '새 일정 추가'}</h3>
+                <button onclick="closeModal()" class="p-1 text-on-surface-variant"><span class="material-symbols-outlined">close</span></button>
+              </div>
+              <form onsubmit="handleSavePlan(event, '${plan ? plan.id : ''}')" class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-xs font-bold mb-1">일차</label>
+                    <select id="m_p_day" class="w-full p-2 rounded-xl border border-outline-variant bg-surface text-xs font-bold">
+                      ${Array.from({ length: Math.max(3, totalDays) }, (_, i) => i + 1).map(d => `
+                        <option value="${d}" ${(plan ? plan.day : selectedDay) === d ? 'selected' : ''}>Day ${d}</option>
+                      `).join('')}
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold mb-1">시간</label>
+                    <input type="time" id="m_p_time" value="${plan ? plan.time : '12:00'}" class="w-full p-2 rounded-xl border border-outline-variant bg-surface text-xs" required />
+                  </div>
+                </div>
+                <input type="text" id="m_p_title" value="${plan ? plan.title : ''}" placeholder="장소 / 일정명 (예: 모츠나베 마에다야)" class="w-full p-2.5 rounded-xl border border-outline-variant bg-surface text-sm" required autofocus />
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-xs font-bold mb-1">카테고리</label>
+                    <select id="m_p_cat" class="w-full p-2 rounded-xl border border-outline-variant bg-surface text-xs font-semibold">
+                      <option value="meal" ${plan?.category === 'meal' ? 'selected' : ''}>식사</option>
+                      <option value="cafe" ${plan?.category === 'cafe' ? 'selected' : ''}>카페</option>
+                      <option value="sightseeing" ${plan?.category === 'sightseeing' ? 'selected' : ''}>관광</option>
+                      <option value="stay" ${plan?.category === 'stay' ? 'selected' : ''}>숙소</option>
+                      <option value="transport" ${plan?.category === 'transport' ? 'selected' : ''}>이동</option>
+                      <option value="activity" ${plan?.category === 'activity' ? 'selected' : ''}>액티비티</option>
+                      <option value="shopping" ${plan?.category === 'shopping' ? 'selected' : ''}>쇼핑</option>
+                      <option value="other" ${plan?.category === 'other' ? 'selected' : ''}>기타</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold mb-1">예상 1인 경비</label>
+                    <input type="number" id="m_p_cost" value="${plan ? plan.costEstimate || '' : ''}" placeholder="0원" class="w-full p-2 rounded-xl border border-outline-variant bg-surface text-xs" />
+                  </div>
+                </div>
+                <input type="text" id="m_p_loc" value="${plan ? plan.location || '' : ''}" placeholder="상세 주소 / 위치" class="w-full p-2.5 rounded-xl border border-outline-variant bg-surface text-xs" />
+                <textarea id="m_p_memo" rows="2" placeholder="메모 & 팁" class="w-full p-2.5 rounded-xl border border-outline-variant bg-surface text-xs resize-none">${plan ? plan.memo || '' : ''}</textarea>
+                <div class="flex justify-end gap-2 pt-2">
+                  <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-bold text-on-surface-variant">취소</button>
+                  <button type="submit" class="px-5 py-2 text-xs font-bold rounded-xl bg-primary text-on-primary">저장 완료</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        `;
+      } else if (type === 'expenseModal') {
+        const exp = data ? appState.expenses.find(e => e.id === data) : null;
+        let selectedPids = exp ? exp.participantIds : appState.friends.map(f => f.id);
+
+        root.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <div class="bg-surface-container-lowest rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant/30 space-y-4 my-6">
+              <div class="flex items-center justify-between pb-2 border-b border-surface-container-high">
+                <h3 class="text-base font-bold text-on-surface">${exp ? '지출 내역 수정' : '새 지출 내역 등록'}</h3>
+                <button onclick="closeModal()" class="p-1 text-on-surface-variant"><span class="material-symbols-outlined">close</span></button>
+              </div>
+              <form onsubmit="handleSaveExpense(event, '${exp ? exp.id : ''}')" class="space-y-3">
+                <input type="text" id="m_e_title" value="${exp ? exp.title : ''}" placeholder="어디서 무엇을 결제했나요? (예: 이치란 라멘)" class="w-full p-2.5 rounded-xl border border-outline-variant bg-surface text-sm" required autofocus />
+                <div class="relative">
+                  <input type="number" id="m_e_amount" value="${exp ? exp.amount : ''}" placeholder="결제 총 금액 (원)" class="w-full p-2.5 pr-8 rounded-xl border border-outline-variant bg-surface text-base font-bold text-primary" required />
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-on-surface-variant">원</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-xs font-bold mb-1">결제한 사람</label>
+                    <select id="m_e_payer" class="w-full p-2 rounded-xl border border-outline-variant bg-surface text-xs font-bold">
+                      ${appState.friends.map(f => `<option value="${f.id}" ${(exp ? exp.payerId : appState.friends[0].id) === f.id ? 'selected' : ''}>${f.name}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold mb-1">카테고리</label>
+                    <select id="m_e_cat" class="w-full p-2 rounded-xl border border-outline-variant bg-surface text-xs font-semibold">
+                      <option value="meal" ${exp?.category === 'meal' ? 'selected' : ''}>식비</option>
+                      <option value="cafe" ${exp?.category === 'cafe' ? 'selected' : ''}>카페</option>
+                      <option value="stay" ${exp?.category === 'stay' ? 'selected' : ''}>숙소</option>
+                      <option value="transport" ${exp?.category === 'transport' ? 'selected' : ''}>교통</option>
+                      <option value="activity" ${exp?.category === 'activity' ? 'selected' : ''}>관광</option>
+                      <option value="snack" ${exp?.category === 'snack' ? 'selected' : ''}>야식·술</option>
+                      <option value="shopping" ${exp?.category === 'shopping' ? 'selected' : ''}>쇼핑</option>
+                      <option value="other" ${exp?.category === 'other' ? 'selected' : ''}>기타</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold mb-1.5">함께한 멤버 (N분의 1 나눌 사람)</label>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                    ${appState.friends.map(f => `
+                      <label class="flex items-center gap-1.5 p-2 rounded-xl border border-outline-variant/40 bg-surface text-xs cursor-pointer">
+                        <input type="checkbox" name="m_e_part" value="${f.id}" ${selectedPids.includes(f.id) ? 'checked' : ''} class="rounded text-primary" />
+                        <span class="truncate font-semibold">${f.name}</span>
+                      </label>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="date" id="m_e_date" value="${exp ? exp.date : new Date().toISOString().slice(0, 10)}" class="p-2 rounded-xl border border-outline-variant bg-surface text-xs" />
+                  <input type="text" id="m_e_loc" value="${exp ? exp.location || '' : ''}" placeholder="상세 장소" class="p-2 rounded-xl border border-outline-variant bg-surface text-xs" />
+                </div>
+                <input type="text" id="m_e_memo" value="${exp ? exp.memo || '' : ''}" placeholder="메모 (예: 술 안 마신 서연이 제외 등)" class="w-full p-2 rounded-xl border border-outline-variant bg-surface text-xs" />
+
+                <div class="flex justify-end gap-2 pt-2">
+                  <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-bold text-on-surface-variant">취소</button>
+                  <button type="submit" class="px-5 py-2 text-xs font-bold rounded-xl bg-primary text-on-primary">지출 등록</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        `;
+      } else if (type === 'syncModal') {
+        root.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <div class="bg-surface-container-lowest rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-outline-variant/30 space-y-4 my-6">
+              <div class="flex items-center justify-between pb-2 border-b border-surface-container-high">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[20px] text-primary">cloud_sync</span>
+                  <h3 class="text-base font-bold text-on-surface">실시간 GitHub 동기화 설정</h3>
+                </div>
+                <button onclick="closeModal()" class="p-1 text-on-surface-variant"><span class="material-symbols-outlined">close</span></button>
+              </div>
+
+              <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/20 text-xs text-on-surface-variant leading-relaxed">
+                💡 <strong>GitHub Gist 기반 동기화:</strong> 서버 비용 없이 GitHub Gist를 이용해 친구들과 같은 여행 계획 및 가계부를 실시간으로 공유하고 N빵 정산할 수 있습니다.
+              </div>
+
+              <div class="space-y-1">
+                <div class="flex items-center justify-between">
+                  <label class="text-xs font-bold">GitHub Personal Access Token (PAT)</label>
+                  <a href="https://github.com/settings/tokens/new?scopes=gist&description=TripSync" target="_blank" class="text-[11px] text-primary font-bold hover:underline">토큰 발급 (gist 권한)</a>
+                </div>
+                <input type="password" id="m_s_token" value="${syncConfig.githubToken || ''}" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="w-full p-2.5 rounded-xl border border-outline-variant bg-surface text-xs font-mono" />
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <label class="text-xs font-bold">여행 동기화 Gist ID</label>
+                  <button type="button" onclick="handleAutoCreateGist()" class="px-2.5 py-1 rounded-lg bg-primary text-on-primary text-[11px] font-bold">새 여행방 자동 생성</button>
+                </div>
+                <div class="flex gap-2">
+                  <input type="text" id="m_s_gist" value="${syncConfig.gistId || ''}" placeholder="Gist ID 입력 또는 위 버튼으로 생성" class="flex-1 p-2.5 rounded-xl border border-outline-variant bg-surface text-xs font-mono" />
+                  <button type="button" onclick="copyShareLink()" class="px-3 py-2 rounded-xl bg-surface-container text-on-surface text-xs font-bold shrink-0">초대링크</button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 pt-1">
+                <button onclick="pushToGist(true)" class="py-2.5 rounded-xl bg-primary-fixed text-primary text-xs font-bold flex items-center justify-center gap-1 hover:bg-primary-fixed-dim">
+                  <span class="material-symbols-outlined text-[16px]">upload</span> GitHub에 저장 (Push)
+                </button>
+                <button onclick="fetchFromGist(false)" class="py-2.5 rounded-xl bg-surface-container text-on-surface text-xs font-bold flex items-center justify-center gap-1 hover:bg-surface-container-high">
+                  <span class="material-symbols-outlined text-[16px]">download</span> 최신 가져오기 (Pull)
+                </button>
+              </div>
+
+              <!-- Backup & Restore -->
+              <div class="pt-2 border-t border-surface-container-high space-y-2">
+                <span class="text-xs font-bold block">오프라인 백업 및 복원</span>
+                <div class="grid grid-cols-2 gap-2">
+                  <button type="button" onclick="exportDataJson()" class="py-2 rounded-xl bg-surface-container text-xs font-semibold">JSON 파일 다운로드</button>
+                  <label class="py-2 rounded-xl bg-surface-container text-xs font-semibold text-center cursor-pointer">
+                    JSON 파일 복원
+                    <input type="file" accept=".json" onchange="importDataJson(event)" class="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="flex justify-between items-center pt-2 border-t border-surface-container-high">
+                <button type="button" onclick="resetToSample()" class="text-xs text-on-surface-variant hover:text-primary">샘플 데이터로 초기화</button>
+                <button type="button" onclick="handleSaveSyncModal()" class="px-5 py-2.5 rounded-xl bg-primary text-on-primary text-xs font-bold">설정 저장</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function handleSaveTripInfo(e) {
+      e.preventDefault();
+      appState.tripInfo.coverEmoji = document.getElementById('m_emoji').value.trim() || '✈️';
+      appState.tripInfo.title = document.getElementById('m_title').value.trim() || '우리들의 여행';
+      appState.tripInfo.destination = document.getElementById('m_dest').value.trim() || '여행지';
+      appState.tripInfo.startDate = document.getElementById('m_start').value;
+      appState.tripInfo.endDate = document.getElementById('m_end').value;
+      appState.tripInfo.memo = document.getElementById('m_memo').value.trim();
+      saveState();
+      closeModal();
+      renderAll();
+      showToast('여행 정보가 수정되었습니다.');
+    }
+
+    function handleSaveCandidate(e) {
+      e.preventDefault();
+      const date = document.getElementById('m_cand_date').value.trim();
+      const notes = document.getElementById('m_cand_notes').value.trim();
+      if (!date) return;
+      appState.datePoll.candidates.push({
+        id: `c_${Date.now()}`,
+        dateStr: date,
+        notes: notes || undefined
+      });
+      saveState();
+      closeModal();
+      renderScheduleView();
+      showToast('후보 날짜가 추가되었습니다.');
+    }
+
+    function handleSaveFriend(e, editId) {
+      e.preventDefault();
+      const name = document.getElementById('m_f_name').value.trim();
+      const color = document.getElementById('m_f_color').value;
+      const acc = document.getElementById('m_f_acc').value.trim();
+      if (!name) return;
+
+      if (editId) {
+        const f = appState.friends.find(item => item.id === editId);
+        if (f) {
+          f.name = name;
+          f.color = color;
+          f.accountInfo = acc;
+        }
+      } else {
+        appState.friends.push({
+          id: `f_${Date.now()}`,
+          name,
+          color,
+          accountInfo: acc
+        });
+      }
+      saveState();
+      closeModal();
+      renderAll();
+      showToast(editId ? '친구 정보가 수정되었습니다.' : '새 친구가 추가되었습니다.');
+    }
+
+    function editFriend(fid) {
+      openModal('editFriendModal', fid);
+    }
+
+    function handleSavePlan(e, editId) {
+      e.preventDefault();
+      const day = Number(document.getElementById('m_p_day').value);
+      const time = document.getElementById('m_p_time').value;
+      const title = document.getElementById('m_p_title').value.trim();
+      const cat = document.getElementById('m_p_cat').value;
+      const cost = parseInt(document.getElementById('m_p_cost').value, 10) || 0;
+      const loc = document.getElementById('m_p_loc').value.trim();
+      const memo = document.getElementById('m_p_memo').value.trim();
+
+      const payload = {
+        day,
+        time,
+        title,
+        category: cat,
+        costEstimate: cost,
+        location: loc,
+        placeUrl: loc ? `https://map.kakao.com/link/search/${encodeURIComponent(loc)}` : undefined,
+        memo,
+        completed: false
+      };
+
+      if (editId) {
+        const p = appState.plans.find(item => item.id === editId);
+        if (p) Object.assign(p, payload);
+      } else {
+        appState.plans.push({ id: `p_${Date.now()}`, ...payload });
+      }
+      saveState();
+      closeModal();
+      renderPlanView();
+      showToast(editId ? '일정이 수정되었습니다.' : '새 일정이 등록되었습니다.');
+    }
+
+    function editPlan(pid) {
+      openModal('planModal', pid);
+    }
+
+    function handleSaveExpense(e, editId) {
+      e.preventDefault();
+      const title = document.getElementById('m_e_title').value.trim();
+      const amount = parseInt(document.getElementById('m_e_amount').value, 10) || 0;
+      const payerId = document.getElementById('m_e_payer').value;
+      const category = document.getElementById('m_e_cat').value;
+      const date = document.getElementById('m_e_date').value;
+      const location = document.getElementById('m_e_loc').value.trim();
+      const memo = document.getElementById('m_e_memo').value.trim();
+
+      const checkedParts = Array.from(document.querySelectorAll("input[name='m_e_part']:checked")).map(el => el.value);
+      if (checkedParts.length === 0) {
+        alert('분할 대상을 최소 1명 이상 선택해주세요.');
+        return;
+      }
+
+      const payload = {
+        title,
+        amount,
+        payerId,
+        category,
+        date,
+        location,
+        memo,
+        participantIds: checkedParts
+      };
+
+      if (editId) {
+        const exp = appState.expenses.find(item => item.id === editId);
+        if (exp) Object.assign(exp, payload);
+      } else {
+        appState.expenses.unshift({ id: `e_${Date.now()}`, createdAt: Date.now(), ...payload });
+      }
+      saveState();
+      closeModal();
+      renderExpenseView();
+      showToast(editId ? '지출 내역이 수정되었습니다.' : '새 지출이 등록되었습니다.');
+    }
+
+    function editExpense(eid) {
+      openModal('expenseModal', eid);
+    }
+
+    async function handleAutoCreateGist() {
+      const token = document.getElementById('m_s_token').value.trim();
+      if (!token) {
+        alert('토큰을 먼저 입력해주세요.');
+        return;
+      }
+      const newId = await createNewGistRoom(token);
+      if (newId) {
+        const input = document.getElementById('m_s_gist');
+        if (input) input.value = newId;
+      }
+    }
+
+    function handleSaveSyncModal() {
+      const token = document.getElementById('m_s_token').value.trim();
+      const gist = document.getElementById('m_s_gist').value.trim();
+      syncConfig.githubToken = token;
+      syncConfig.gistId = gist;
+      saveSyncConfig(syncConfig);
+      closeModal();
+      showToast('동기화 설정이 저장되었습니다.');
+    }
+
+    function exportDataJson() {
+      const json = JSON.stringify(appState, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TripSync_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importDataJson(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const parsed = JSON.parse(ev.target.result);
+          if (parsed.tripInfo && parsed.friends) {
+            appState = parsed;
+            saveState();
+            closeModal();
+            renderAll();
+            showToast('데이터가 성공적으로 복원되었습니다!');
+          } else {
+            alert('올바른 TripSync 데이터 파일이 아닙니다.');
+          }
+        } catch {
+          alert('JSON 파일 파싱 실패');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetToSample() {
+      if (!confirm('샘플 데이터로 초기화하시겠습니까?')) return;
+      appState = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      saveState();
+      closeModal();
+      renderAll();
+      showToast('샘플 데이터가 복원되었습니다.');
+    }
+
+    /* =========================================================================
+       8. INITIALIZATION
+       ========================================================================= */
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAll();
+      // If Gist in URL, auto fetch
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlGist = urlParams.get('gist');
+      if (urlGist) {
+        fetchFromGist(true);
+      }
+    });
+  </script>
+</body>
+
+</html>
