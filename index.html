@@ -3,8 +3,13 @@
 
 <head>
   <meta charset="utf-8" />
-  <link rel="icon" type="image/svg+xml"
-    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#006194" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="TripSync" />
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="shell-type" content="mobile_tab" />
@@ -190,6 +195,12 @@
       </div>
 
       <div class="flex items-center gap-1 sm:gap-2">
+        <button id="btnInstallPwa" onclick="installPwaApp()"
+          class="hidden px-2.5 h-9 items-center justify-center gap-1 rounded-full bg-secondary-container text-on-secondary-container text-[11px] font-bold shadow-xs active:scale-95 transition-all"
+          title="홈 화면에 앱 설치">
+          <span class="material-symbols-outlined text-[16px]">install_mobile</span>
+          <span class="hidden sm:inline">앱 설치</span>
+        </button>
         <button id="btnManualSync" onclick="manualSync()"
           class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high/60 transition-colors"
           title="실시간 동기화">
@@ -622,7 +633,7 @@
       const settlement = calculateSettlement(appState.friends, appState.expenses);
       let text = `✈️ [${appState.tripInfo.title}] 최종 경비 정산 안내\n`;
       text += `💰 총 지출: ${settlement.totalExpenses.toLocaleString()}원 (${settlement.expenseCount}건)\n`;
-      
+
       // 외화 결제 내역 요약 표기
       if (settlement.currencyTotals && Object.keys(settlement.currencyTotals).length > 0) {
         text += `💱 [현지 외화 결제 합계]\n`;
@@ -2008,9 +2019,9 @@
                   ${hasForeignTotals ? `
                     <span class="text-primary-fixed-dim">•</span>
                     ${Object.entries(settlement.currencyTotals).map(([cur, val]) => {
-                      const info = SUPPORTED_CURRENCIES[cur] || { flag: '🌐', unit: cur };
-                      return `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-secondary-container bg-surface-container-lowest/20 px-2 py-0.5 rounded-full">${info.flag} ${val.toLocaleString()}${info.unit}</span>`;
-                    }).join(' ')}
+        const info = SUPPORTED_CURRENCIES[cur] || { flag: '🌐', unit: cur };
+        return `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-secondary-container bg-surface-container-lowest/20 px-2 py-0.5 rounded-full">${info.flag} ${val.toLocaleString()}${info.unit}</span>`;
+      }).join(' ')}
                   ` : ''}
                 </div>
               </div>
@@ -2148,6 +2159,10 @@
               <span>송금 리스트 복사</span>
             </button>
           </div>
+          <button onclick="exportToExcel()" class="w-full mt-2 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-secondary/15 text-secondary border border-secondary/25 text-xs font-bold hover:bg-secondary/20 active:scale-95 transition-all">
+            <span class="material-symbols-outlined text-[16px]">table_view</span>
+            <span>엑셀(.xlsx) 정산 · 일정표 내보내기</span>
+          </button>
         </section>
 
         <!-- Itemized Timeline -->
@@ -2874,8 +2889,8 @@
                   <p class="text-xs font-bold text-on-surface">스마트폰 카메라로 QR코드를 스캔하세요</p>
                   <p id="qrShareUrlHint" class="text-[11px] text-on-surface-variant mt-0.5 break-all max-w-full">
                     ${window.location.protocol === 'file:'
-                      ? '💡 모바일_접속하기.bat 실행 후 접속하면 스마트폰에서 바로 스캔됩니다'
-                      : '토큰이나 로그인 없이 바로 같은 여행에 참여됩니다 🎒'}
+            ? '💡 모바일_접속하기.bat 실행 후 접속하면 스마트폰에서 바로 스캔됩니다'
+            : '토큰이나 로그인 없이 바로 같은 여행에 참여됩니다 🎒'}
                   </p>
                 </div>
 
@@ -2949,7 +2964,11 @@
 
               <!-- Backup & Restore -->
               <div class="pt-2 border-t border-surface-container-high space-y-2">
-                <span class="text-xs font-bold block">오프라인 간편 공유 & 백업</span>
+                <span class="text-xs font-bold block">오프라인 간편 공유 · 엑셀 · 백업</span>
+                <button type="button" onclick="exportToExcel()" class="w-full py-2.5 rounded-xl bg-secondary text-white text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px]">table_view</span>
+                  <span>엑셀(.xlsx) 정산·일정·준비물 전체 내보내기</span>
+                </button>
                 <div class="grid grid-cols-2 gap-2">
                   <button type="button" onclick="copyTripSnapshotCode()" class="py-2 rounded-xl bg-primary-container/60 text-primary text-xs font-bold">스냅샷 코드 복사</button>
                   <button type="button" onclick="importTripSnapshotCode()" class="py-2 rounded-xl bg-primary-container/60 text-primary text-xs font-bold">스냅샷 코드 불러오기</button>
@@ -3696,9 +3715,194 @@
     }
 
     /* =========================================================================
+       7-C. EXCEL (.XLSX) EXPORT & PWA APP INSTALLER
+       ========================================================================= */
+    let sheetJsLoadPromise = null;
+    let deferredPwaPrompt = null;
+
+    function loadSheetJsScript() {
+      if (typeof window.XLSX !== 'undefined') return Promise.resolve(window.XLSX);
+      if (sheetJsLoadPromise) return sheetJsLoadPromise;
+      sheetJsLoadPromise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+        s.onload = () => resolve(window.XLSX);
+        s.onerror = () => {
+          sheetJsLoadPromise = null;
+          reject(new Error('엑셀 라이브러리 로드 실패'));
+        };
+        document.head.appendChild(s);
+      });
+      return sheetJsLoadPromise;
+    }
+
+    async function exportToExcel() {
+      showToast('📊 엑셀(.xlsx) 파일을 생성하는 중...');
+      try {
+        const XLSX = await loadSheetJsScript();
+        const wb = XLSX.utils.book_new();
+        const settlement = calculateSettlement(appState.friends, appState.expenses);
+        const friendNameMap = Object.fromEntries(appState.friends.map(f => [f.id, f.name]));
+
+        // 시트 1: 정산 요약
+        const summaryRows = [
+          ['여행 제목', appState.tripInfo.title],
+          ['목적지', appState.tripInfo.destination],
+          ['여행 기간', `${appState.tripInfo.startDate} ~ ${appState.tripInfo.endDate}`],
+          ['총 지출(원화)', settlement.totalExpenses],
+          ['총 지출 건수', settlement.expenseCount],
+          [],
+          ['[멤버별 정산 현황]'],
+          ['이름', '결제 총액(원)', '분담 총액(원)', '정산 차액(원)', '정산 상태', '계좌 정보']
+        ];
+        settlement.friendSummaries.forEach(s => {
+          summaryRows.push([
+            s.friend.name,
+            s.totalPaid,
+            s.totalOwed,
+            s.netBalance,
+            s.netBalance > 0 ? '받을 금액' : s.netBalance < 0 ? '보낼 금액' : '정산 완료',
+            s.friend.accountInfo || ''
+          ]);
+        });
+        summaryRows.push([], ['[최소 송금 안내]'], ['보내는 사람', '받는 사람', '송금 금액(원)', '입금 계좌']);
+        if (settlement.transfers.length === 0) {
+          summaryRows.push(['송금할 내역 없음', '', 0, '']);
+        } else {
+          settlement.transfers.forEach(t => {
+            summaryRows.push([t.fromName, t.toName, t.amount, t.toAccount || '']);
+          });
+        }
+        const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+        wsSummary['!cols'] = [{ wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 28 }];
+        XLSX.utils.book_append_sheet(wb, wsSummary, '정산 요약');
+
+        // 시트 2: 지출 상세
+        const expenseRows = [
+          ['날짜', '항목', '카테고리', '결제자', '통화', '외화 금액', '적용 환율(원)', '원화 금액(원)', '분담 인원', '장소', '메모']
+        ];
+        appState.expenses.forEach(e => {
+          const catLabel = EXPENSE_CATEGORIES[e.category]?.label || e.category || '기타';
+          const parts = (e.participantIds || []).map(id => friendNameMap[id] || id).join(', ');
+          expenseRows.push([
+            e.date || '',
+            e.title || '',
+            catLabel,
+            friendNameMap[e.payerId] || '',
+            e.currency || 'KRW',
+            e.foreignAmount || '',
+            e.exchangeRate ? Number(e.exchangeRate.toFixed(2)) : '',
+            e.amount || 0,
+            parts,
+            e.location || '',
+            e.memo || ''
+          ]);
+        });
+        const wsExp = XLSX.utils.aoa_to_sheet(expenseRows);
+        wsExp['!cols'] = [{ wch: 12 }, { wch: 26 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 22 }, { wch: 18 }, { wch: 24 }];
+        XLSX.utils.book_append_sheet(wb, wsExp, '지출 상세');
+
+        // 시트 3: 여행 일정
+        const planRows = [
+          ['일차', '시간', '일정명', '카테고리', '장소', '예상 경비(원)', '방문 여부', '메모']
+        ];
+        const sortedPlans = [...appState.plans].sort((a, b) => (a.day - b.day) || a.time.localeCompare(b.time));
+        sortedPlans.forEach(p => {
+          const catLabel = PLAN_CATEGORIES[p.category]?.label || p.category || '기타';
+          planRows.push([
+            `Day ${p.day}`,
+            p.time || '',
+            p.title || '',
+            catLabel,
+            p.location || '',
+            p.costEstimate || 0,
+            p.completed ? '완료' : '예정',
+            p.memo || ''
+          ]);
+        });
+        const wsPlan = XLSX.utils.aoa_to_sheet(planRows);
+        wsPlan['!cols'] = [{ wch: 8 }, { wch: 8 }, { wch: 28 }, { wch: 10 }, { wch: 22 }, { wch: 14 }, { wch: 10 }, { wch: 28 }];
+        XLSX.utils.book_append_sheet(wb, wsPlan, '여행 일정');
+
+        // 시트 4: 준비물
+        const checkRows = [['구분', '준비물', '담당자', '완료 여부']];
+        appState.checklists.forEach(c => {
+          checkRows.push([
+            c.type === 'shared' ? '공동' : '개인',
+            c.text || '',
+            c.assignedTo ? (friendNameMap[c.assignedTo] || '') : '',
+            c.completed ? '완료' : '미완료'
+          ]);
+        });
+        const wsCheck = XLSX.utils.aoa_to_sheet(checkRows);
+        wsCheck['!cols'] = [{ wch: 8 }, { wch: 30 }, { wch: 12 }, { wch: 10 }];
+        XLSX.utils.book_append_sheet(wb, wsCheck, '준비물');
+
+        const safeTitle = (appState.tripInfo.title || 'TripSync').replace(/[\\/:*?"<>|]/g, '').trim().slice(0, 20);
+        const dateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        XLSX.writeFile(wb, `TripSync_${safeTitle}_${dateTag}.xlsx`);
+        showToast('📊 엑셀(.xlsx) 파일이 다운로드되었습니다!');
+      } catch (err) {
+        showToast('엑셀 내보내기 중 오류가 발생했습니다. 인터넷 연결을 확인해주세요.');
+      }
+    }
+
+    function initPwaSupport() {
+      const btn = document.getElementById('btnInstallPwa');
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+      // Service Worker 등록 (오프라인 실행 및 앱 설치 요건)
+      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      }
+
+      // Android / PC Chrome 설치 이벤트 감지
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPwaPrompt = e;
+        if (btn && !isStandalone) {
+          btn.classList.remove('hidden');
+          btn.classList.add('flex');
+        }
+      });
+
+      window.addEventListener('appinstalled', () => {
+        deferredPwaPrompt = null;
+        if (btn) btn.classList.add('hidden');
+        showToast('📲 TripSync 앱이 홈 화면에 설치되었습니다!');
+      });
+
+      // iOS Safari에서는 수동 설치 안내 버튼 노출
+      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      if (isIos && !isStandalone && btn) {
+        btn.classList.remove('hidden');
+        btn.classList.add('flex');
+      }
+    }
+
+    async function installPwaApp() {
+      if (deferredPwaPrompt) {
+        deferredPwaPrompt.prompt();
+        const { outcome } = await deferredPwaPrompt.userChoice;
+        if (outcome === 'accepted') {
+          deferredPwaPrompt = null;
+          document.getElementById('btnInstallPwa')?.classList.add('hidden');
+        }
+        return;
+      }
+      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      if (isIos) {
+        alert('📲 아이폰(Safari) 앱 설치 방법:\n\n1. 화면 하단의 [공유(↑)] 버튼을 누르세요.\n2. [홈 화면에 추가]를 선택하면 앱처럼 설치됩니다!');
+      } else {
+        alert('📲 브라우저 주소창 오른쪽의 [앱 설치] 아이콘 또는 메뉴의 [홈 화면에 추가]를 눌러 설치할 수 있습니다.');
+      }
+    }
+
+    /* =========================================================================
        8. INITIALIZATION
        ========================================================================= */
     window.addEventListener('DOMContentLoaded', async () => {
+      initPwaSupport();
       renderAll();
       // 1. 로컬 Wi-Fi 서버 정보 조회 및 동기화 (실행 중인 경우)
       await fetchServerInfo();
