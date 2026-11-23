@@ -28,6 +28,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/api/') ||
     url.hostname.includes('api.github.com') ||
     url.hostname.includes('er-api.com') ||
+    url.hostname.includes('open-meteo.com') ||
     url.hostname.includes('nominatim')
   ) {
     return;
