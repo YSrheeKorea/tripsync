@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tripsync-pwa-v4';
+const CACHE_NAME = 'tripsync-pwa-v5';
 const CORE_ASSETS = [
   './',
   './index.html',
