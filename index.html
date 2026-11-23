@@ -331,47 +331,32 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-1 sm:gap-2">
+      <div class="flex items-center gap-1 sm:gap-1.5">
         <button id="btnInstallPwa" onclick="installPwaApp()"
           class="hidden px-2.5 h-9 items-center justify-center gap-1 rounded-full bg-secondary-container text-on-secondary-container text-[11px] font-bold shadow-xs active:scale-95 transition-all"
           title="홈 화면에 앱 설치">
           <span class="material-symbols-outlined text-[16px]">install_mobile</span>
           <span class="hidden sm:inline">앱 설치</span>
         </button>
-        <button onclick="openModal('tripArchiveModal')"
-          class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high/60 transition-colors"
-          title="내 여행 보관함 (새 여행 만들기 / 전환)">
-          <span class="material-symbols-outlined text-[20px]">folder_special</span>
-        </button>
-        <button id="btnDarkMode" onclick="openModal('themeSelectModal')"
-          class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high/60 transition-colors"
-          title="테마 선택 (일반 / 다크 / 화이트 / 엑스팀)">
-          <span class="material-symbols-outlined text-[20px]" id="iconDarkMode">palette</span>
-        </button>
         <button onclick="openModal('minigameModal')"
-          class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-primary bg-primary-fixed/60 hover:bg-primary-fixed transition-colors"
+          class="w-9 h-9 flex items-center justify-center rounded-full text-primary bg-primary-fixed/60 hover:bg-primary-fixed transition-colors"
           title="복불복 사다리타기 & 제비뽑기">
-          <span class="material-symbols-outlined text-[20px]">casino</span>
+          <span class="material-symbols-outlined text-[19px]">casino</span>
         </button>
         <button onclick="openModal('phrasebookModal')"
-          class="w-10 h-10 flex items-center justify-center rounded-full text-primary bg-primary-fixed/60 hover:bg-primary-fixed transition-colors"
+          class="w-9 h-9 flex items-center justify-center rounded-full text-primary bg-primary-fixed/60 hover:bg-primary-fixed transition-colors"
           title="현지 생존 회화 & 번역 도우미">
-          <span class="material-symbols-outlined text-[21px]">translate</span>
+          <span class="material-symbols-outlined text-[19px]">translate</span>
         </button>
         <button id="btnManualSync" onclick="manualSync()"
-          class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high/60 transition-colors"
+          class="w-9 h-9 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high/60 transition-colors"
           title="실시간 동기화">
-          <span class="material-symbols-outlined text-[22px]">sync</span>
-        </button>
-        <button onclick="copyShareLink()"
-          class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high/60 transition-colors"
-          title="초대 링크 복사">
-          <span class="material-symbols-outlined text-[22px]">share</span>
+          <span class="material-symbols-outlined text-[20px]">sync</span>
         </button>
         <button onclick="openModal('syncModal')"
-          class="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-on-primary shadow-md active:scale-95 transition-all"
-          title="동기화 및 백업 설정">
-          <span class="material-symbols-outlined text-[22px]">cloud_sync</span>
+          class="w-9 h-9 flex items-center justify-center rounded-full bg-primary text-on-primary shadow-md active:scale-95 transition-all"
+          title="초대 코드 · 채팅방 동기화 설정">
+          <span class="material-symbols-outlined text-[19px]">cloud_sync</span>
         </button>
       </div>
     </div>
@@ -390,31 +375,39 @@
 
     <!-- View 4: 체크리스트 (Checklist) -->
     <div id="viewChecklist" class="tab-view hidden flex flex-col gap-space-xl"></div>
+
+    <!-- View 5: 전체 기능 도구 & 설정 (Settings / All Features Hub) -->
+    <div id="viewSettings" class="tab-view hidden flex flex-col gap-space-xl"></div>
   </main>
 
-  <!-- Bottom Navigation Bar -->
+  <!-- Bottom Navigation Bar (5대 탭: 일정 조율 / 여행 계획 / 경비 정산 / 준비물 / 도구·설정) -->
   <nav
     class="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(19,27,46,0.06)] border-t border-outline-variant/20">
-    <div class="grid grid-cols-4 items-center h-16 px-1 max-w-3xl mx-auto">
+    <div class="grid grid-cols-5 items-center h-16 px-1 max-w-3xl mx-auto">
       <button onclick="switchTab('schedule')" id="nav-schedule"
         class="nav-btn flex flex-col items-center justify-center gap-0.5 h-full text-primary font-bold">
-        <span class="material-symbols-outlined text-[22px] filled">sync_alt</span>
-        <span class="text-[11px] leading-tight">일정 조율</span>
+        <span class="material-symbols-outlined text-[21px] filled">sync_alt</span>
+        <span class="text-[10px] sm:text-[11px] leading-tight">일정 조율</span>
       </button>
       <button onclick="switchTab('plan')" id="nav-plan"
         class="nav-btn flex flex-col items-center justify-center gap-0.5 h-full text-on-surface-variant font-medium">
-        <span class="material-symbols-outlined text-[22px]">calendar_month</span>
-        <span class="text-[11px] leading-tight">여행 계획</span>
+        <span class="material-symbols-outlined text-[21px]">calendar_month</span>
+        <span class="text-[10px] sm:text-[11px] leading-tight">여행 계획</span>
       </button>
       <button onclick="switchTab('expense')" id="nav-expense"
         class="nav-btn flex flex-col items-center justify-center gap-0.5 h-full text-on-surface-variant font-medium">
-        <span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
-        <span class="text-[11px] leading-tight">경비 정산</span>
+        <span class="material-symbols-outlined text-[21px]">account_balance_wallet</span>
+        <span class="text-[10px] sm:text-[11px] leading-tight">경비 정산</span>
       </button>
       <button onclick="switchTab('checklist')" id="nav-checklist"
         class="nav-btn flex flex-col items-center justify-center gap-0.5 h-full text-on-surface-variant font-medium">
-        <span class="material-symbols-outlined text-[22px]">checklist</span>
-        <span class="text-[11px] leading-tight">체크리스트</span>
+        <span class="material-symbols-outlined text-[21px]">checklist</span>
+        <span class="text-[10px] sm:text-[11px] leading-tight">준비물</span>
+      </button>
+      <button onclick="switchTab('settings')" id="nav-settings"
+        class="nav-btn flex flex-col items-center justify-center gap-0.5 h-full text-on-surface-variant font-medium">
+        <span class="material-symbols-outlined text-[21px]">apps</span>
+        <span class="text-[10px] sm:text-[11px] leading-tight">도구·설정</span>
       </button>
     </div>
   </nav>
@@ -1492,6 +1485,9 @@
       } else if (tab === 'checklist') {
         document.getElementById('viewChecklist').classList.remove('hidden');
         renderChecklistView();
+      } else if (tab === 'settings') {
+        document.getElementById('viewSettings').classList.remove('hidden');
+        renderSettingsView();
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -2894,6 +2890,259 @@
       else if (currentTab === 'plan') renderPlanView();
       else if (currentTab === 'expense') renderExpenseView();
       else if (currentTab === 'checklist') renderChecklistView();
+      else if (currentTab === 'settings') renderSettingsView();
+    }
+
+    /* --- VIEW 5: SETTINGS & ALL TOOLS HUB (도구·설정 통합 탭) --- */
+    function renderSettingsView() {
+      const container = document.getElementById('viewSettings');
+      if (!container) return;
+      const curTheme = getCurrentTheme();
+      const archiveList = loadTripArchiveList();
+      const syncStatusText = syncConfig.isLocalServerActive
+        ? '🟢 Wi-Fi 로컬 실시간 서버 연결됨'
+        : (syncConfig.gistId && syncConfig.githubToken)
+          ? `🛡️ 비공개 채팅방 공동편집 중 (ID: ${syncConfig.gistId.slice(0, 8)}...)`
+          : (syncConfig.gistId && !syncConfig.githubToken)
+            ? `👁️ 비공개 채팅방 읽기 전용 (비밀번호 미입력)`
+            : `🛡️ 로컬 보안 저장 모드 (참여 코드: ${syncConfig.roomCode || '기본'})`;
+
+      container.innerHTML = `
+        <!-- 상단 배너: 전체 기능 한눈에 보기 허브 -->
+        <section class="rounded-2xl bg-gradient-to-br from-primary via-primary-container to-primary text-on-primary p-space-lg shadow-md flex items-center justify-between gap-3">
+          <div>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-lowest/20 text-[10px] font-bold mb-1">
+              ✨ ALL-IN-ONE 허브
+            </span>
+            <h2 class="text-base sm:text-lg font-extrabold">여행 편의 도구 & 전체 설정</h2>
+            <p class="text-xs text-primary-fixed mt-0.5">추가된 모든 스페셜 기능과 테마·동기화 설정을 한곳에 모았습니다.</p>
+          </div>
+          <div class="w-12 h-12 rounded-2xl bg-surface-container-lowest/15 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[28px]">apps</span>
+          </div>
+        </section>
+
+        <!-- 1. 4대 컬러 테마 즉시 선택 (엑스팀 보라 포함) -->
+        <section class="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[19px] text-primary">palette</span>
+              <h3 class="text-sm font-bold text-on-surface">앱 컬러 테마 선택</h3>
+            </div>
+            <span class="text-[11px] font-bold text-primary">${SUPPORTED_THEMES[curTheme]?.name || '일반'}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            ${Object.values(SUPPORTED_THEMES).map(t => {
+              const isSel = curTheme === t.id;
+              return `
+                <button type="button" onclick="applyTheme('${t.id}', true); renderSettingsView();" class="p-3 rounded-2xl border-2 text-left transition-all flex items-center gap-2.5 ${isSel ? 'border-primary bg-primary-fixed/30 shadow-xs' : 'border-outline-variant/30 bg-surface-container-low hover:bg-surface-container'}">
+                  <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs" style="background-color: ${t.dotColor}">
+                    <span class="material-symbols-outlined text-[17px]">${t.icon}</span>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1">
+                      <strong class="text-xs font-extrabold text-on-surface truncate">${t.name}</strong>
+                    </div>
+                    <p class="text-[10px] text-on-surface-variant truncate mt-0.5">${t.id === 'xteam' ? '목산침례교회 X-TEAM' : t.desc}</p>
+                  </div>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </section>
+
+        <!-- 2. 여행 편의 도구 & 미니게임 (한눈에 보는 6대 기능 런처) -->
+        <section class="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm space-y-3">
+          <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[19px] text-primary">auto_awesome</span>
+            <h3 class="text-sm font-bold text-on-surface">여행 편의 도구 & 복불복 게임</h3>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <!-- 사다리타기 & 제비뽑기 -->
+            <button type="button" onclick="openModal('minigameModal')" class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 hover:border-primary text-left flex items-start gap-3 transition-all active:scale-98">
+              <div class="w-10 h-10 rounded-2xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-xs">
+                <span class="material-symbols-outlined text-[22px]">casino</span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <strong class="text-xs sm:text-sm font-extrabold text-on-surface">🎲 사다리타기 & 제비뽑기</strong>
+                  <span class="text-[10px] font-bold text-primary">실행 →</span>
+                </div>
+                <p class="text-[11px] text-on-surface-variant mt-0.5">커피·야식 쏘기, 운전 당번, 숙소 방/침대 배정 복불복</p>
+              </div>
+            </button>
+
+            <!-- 현지 생존 회화 & 번역기 -->
+            <button type="button" onclick="openModal('phrasebookModal')" class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 hover:border-primary text-left flex items-start gap-3 transition-all active:scale-98">
+              <div class="w-10 h-10 rounded-2xl bg-secondary text-on-secondary flex items-center justify-center shrink-0 shadow-xs">
+                <span class="material-symbols-outlined text-[22px]">translate</span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <strong class="text-xs sm:text-sm font-extrabold text-on-surface">🗣️ 현지 생존 회화 & 번역</strong>
+                  <span class="text-[10px] font-bold text-secondary">실행 →</span>
+                </div>
+                <p class="text-[11px] text-on-surface-variant mt-0.5">5개국어 원어민 음성(TTS) · 점원/택시기사님 큰글씨 카드</p>
+              </div>
+            </button>
+
+            <!-- 한 장의 여행 요약 이미지 카드 -->
+            <button type="button" onclick="openSummaryCardModal()" class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 hover:border-primary text-left flex items-start gap-3 transition-all active:scale-98">
+              <div class="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <span class="material-symbols-outlined text-[22px]">auto_awesome_mosaic</span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <strong class="text-xs sm:text-sm font-extrabold text-on-surface">📸 한 장의 여행 요약 카드</strong>
+                  <span class="text-[10px] font-bold text-purple-600">생성 →</span>
+                </div>
+                <p class="text-[11px] text-on-surface-variant mt-0.5">인증샷 · 베스트 코스 · 총 정산 요약을 고화질 이미지(PNG)로 저장</p>
+              </div>
+            </button>
+
+            <!-- 엑셀(.xlsx) 통합 내보내기 -->
+            <button type="button" onclick="exportToExcel()" class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 hover:border-primary text-left flex items-start gap-3 transition-all active:scale-98">
+              <div class="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <span class="material-symbols-outlined text-[22px]">table_view</span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <strong class="text-xs sm:text-sm font-extrabold text-on-surface">📊 엑셀(.xlsx) 내보내기</strong>
+                  <span class="text-[10px] font-bold text-emerald-600">다운로드 →</span>
+                </div>
+                <p class="text-[11px] text-on-surface-variant mt-0.5">정산 요약 · 지출 상세 · 여행 일정 · 준비물 4개 시트 자동 생성</p>
+              </div>
+            </button>
+
+            <!-- AI 영수증 사진 스캔 & 결제문자 자동 등록 -->
+            <button type="button" onclick="openModal('expenseModal')" class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 hover:border-primary text-left flex items-start gap-3 transition-all active:scale-98">
+              <div class="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <span class="material-symbols-outlined text-[22px]">document_scanner</span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <strong class="text-xs sm:text-sm font-extrabold text-on-surface">🧾 AI 영수증 · 결제문자 인식</strong>
+                  <span class="text-[10px] font-bold text-amber-600">열기 →</span>
+                </div>
+                <p class="text-[11px] text-on-surface-variant mt-0.5">영수증 사진 OCR · 카드 승인문자 붙여넣기 · 차등/균등 정산</p>
+              </div>
+            </button>
+
+            <!-- 내 여행 보관함 (멀티 트립) -->
+            <button type="button" onclick="openModal('tripArchiveModal')" class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 hover:border-primary text-left flex items-start gap-3 transition-all active:scale-98">
+              <div class="w-10 h-10 rounded-2xl bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <span class="material-symbols-outlined text-[22px]">folder_special</span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <strong class="text-xs sm:text-sm font-extrabold text-on-surface">🗂️ 내 여행 보관함 (${archiveList.length}개)</strong>
+                  <span class="text-[10px] font-bold text-sky-600">관리 →</span>
+                </div>
+                <p class="text-[11px] text-on-surface-variant mt-0.5">현재 여행을 보관하고 새 여행을 만들거나 이전 여행 불러오기</p>
+              </div>
+            </button>
+          </div>
+        </section>
+
+        <!-- 3. 채팅방 실시간 동기화 & 초대 공유 -->
+        <section class="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[19px] text-primary">cloud_sync</span>
+              <h3 class="text-sm font-bold text-on-surface">채팅방 실시간 동기화 & 친구 초대</h3>
+            </div>
+            <button type="button" onclick="manualSync()" class="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
+              <span class="material-symbols-outlined text-[14px]">sync</span> 지금 동기화
+            </button>
+          </div>
+
+          <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 text-xs font-semibold text-on-surface">
+            ${syncStatusText}
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <button type="button" onclick="openModal('syncModal')" class="py-2.5 px-3 rounded-xl bg-primary text-on-primary text-xs font-bold shadow-xs flex items-center justify-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px]">qr_code_2</span>
+              <span>채팅방·QR 설정</span>
+            </button>
+            <button type="button" onclick="copyShareLink()" class="py-2.5 px-3 rounded-xl bg-surface-container text-on-surface text-xs font-bold flex items-center justify-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px]">link</span>
+              <span>초대 링크 복사</span>
+            </button>
+            <button type="button" onclick="copyInviteKakaoMessage()" class="col-span-2 sm:col-span-1 py-2.5 px-3 rounded-xl bg-amber-400 text-stone-900 text-xs font-bold flex items-center justify-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px]">chat</span>
+              <span>카톡 초대장 복사</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 4. 탭별 숨은 기능 위치 안내 & 바로가기 -->
+        <section class="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm space-y-2.5">
+          <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[19px] text-primary">help_outline</span>
+            <h3 class="text-sm font-bold text-on-surface">탭별 주요 기능 위치 안내 (클릭 시 이동)</h3>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <div onclick="switchTab('schedule')" class="p-3 rounded-xl bg-surface-container-low hover:bg-surface-container cursor-pointer flex items-center justify-between gap-2">
+              <div>
+                <strong class="font-bold text-primary block">① 일정 조율 탭</strong>
+                <span class="text-[11px] text-on-surface-variant">후보 날짜 투표 · <strong>[이 날짜로 확정]</strong> 원클릭 반영 · 참여 멤버 및 계좌 관리</span>
+              </div>
+              <span class="material-symbols-outlined text-[18px] text-on-surface-variant">chevron_right</span>
+            </div>
+
+            <div onclick="switchTab('plan')" class="p-3 rounded-xl bg-surface-container-low hover:bg-surface-container cursor-pointer flex items-center justify-between gap-2">
+              <div>
+                <strong class="font-bold text-primary block">② 여행 계획 탭</strong>
+                <span class="text-[11px] text-on-surface-variant"><strong>이동 동선 지도</strong> · <strong>[동선 최적화]</strong> · <strong>일차별 실시간 날씨/우산 알림</strong> · <strong>[⇄ 일차 교환]</strong> · 일정별 <strong>[🚕 택시 카드]</strong> · <strong>[💸 정산 등록]</strong> · <strong>[📷 인증샷 & ★별점]</strong></span>
+              </div>
+              <span class="material-symbols-outlined text-[18px] text-on-surface-variant">chevron_right</span>
+            </div>
+
+            <div onclick="switchTab('expense')" class="p-3 rounded-xl bg-surface-container-low hover:bg-surface-container cursor-pointer flex items-center justify-between gap-2">
+              <div>
+                <strong class="font-bold text-primary block">③ 경비 정산 탭</strong>
+                <span class="text-[11px] text-on-surface-variant"><strong>외화 실시간 환율 자동 계산</strong> · <strong>AI 영수증 사진/문자 자동 입력</strong> · <strong>1/N 균등 & 차등 정산</strong> · <strong>목표 예산 게이지 & 카테고리 차트</strong> · 최소 송금 계산</span>
+              </div>
+              <span class="material-symbols-outlined text-[18px] text-on-surface-variant">chevron_right</span>
+            </div>
+
+            <div onclick="switchTab('checklist')" class="p-3 rounded-xl bg-surface-container-low hover:bg-surface-container cursor-pointer flex items-center justify-between gap-2">
+              <div>
+                <strong class="font-bold text-primary block">④ 준비물 탭</strong>
+                <span class="text-[11px] text-on-surface-variant">공용/개인 준비물 체크 · <strong>공용 준비물 담당 멤버 지정 및 수정</strong></span>
+              </div>
+              <span class="material-symbols-outlined text-[18px] text-on-surface-variant">chevron_right</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. 앱 설치(PWA) & 데이터 용량/백업 관리 -->
+        <section class="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[19px] text-primary">storage</span>
+              <h3 class="text-sm font-bold text-on-surface">앱 설치 & 데이터 용량·백업</h3>
+            </div>
+            <button type="button" onclick="installPwaApp()" class="px-2.5 py-1 rounded-lg bg-secondary-container text-on-secondary-container text-[11px] font-bold flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">install_mobile</span>
+              <span>홈 화면에 앱 설치</span>
+            </button>
+          </div>
+
+          ${buildStorageUsageBarHtml()}
+
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="exportDataJson()" class="py-2 rounded-xl bg-surface-container text-xs font-bold">JSON 백업 다운로드</button>
+            <label class="py-2 rounded-xl bg-surface-container text-xs font-bold text-center cursor-pointer">
+              JSON 백업 복원
+              <input type="file" accept=".json" onchange="importDataJson(event)" class="hidden" />
+            </label>
+          </div>
+        </section>
+      `;
     }
 
     /* =========================================================================
