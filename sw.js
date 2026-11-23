@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tripsync-pwa-v1';
+const CACHE_NAME = 'tripsync-pwa-v2';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -27,6 +27,7 @@ self.addEventListener('fetch', (event) => {
     event.request.method !== 'GET' ||
     url.pathname.startsWith('/api/') ||
     url.hostname.includes('api.github.com') ||
+    url.hostname.includes('githubusercontent.com') ||
     url.hostname.includes('er-api.com') ||
     url.hostname.includes('open-meteo.com') ||
     url.hostname.includes('nominatim')
