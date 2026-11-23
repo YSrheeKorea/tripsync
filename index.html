@@ -348,6 +348,11 @@
           title="테마 선택 (일반 / 다크 / 화이트 / 엑스팀)">
           <span class="material-symbols-outlined text-[20px]" id="iconDarkMode">palette</span>
         </button>
+        <button onclick="openModal('minigameModal')"
+          class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-primary bg-primary-fixed/60 hover:bg-primary-fixed transition-colors"
+          title="복불복 사다리타기 & 제비뽑기">
+          <span class="material-symbols-outlined text-[20px]">casino</span>
+        </button>
         <button onclick="openModal('phrasebookModal')"
           class="w-10 h-10 flex items-center justify-center rounded-full text-primary bg-primary-fixed/60 hover:bg-primary-fixed transition-colors"
           title="현지 생존 회화 & 번역 도우미">
@@ -3739,6 +3744,12 @@
         root.innerHTML = buildTripArchiveModalHtml();
       } else if (type === 'themeSelectModal') {
         root.innerHTML = buildThemeSelectModalHtml();
+      } else if (type === 'minigameModal') {
+        initMinigameState();
+        root.innerHTML = buildMinigameModalHtml();
+        setTimeout(() => {
+          if (minigameState.tab === 'ladder') drawLadderCanvas();
+        }, 50);
       } else if (type === 'phrasebookModal') {
         const curLang = selectedPhraseLang || detectDestinationLang();
         selectedPhraseLang = curLang;
@@ -5844,6 +5855,451 @@
       } catch (e) {
         return '';
       }
+    }
+
+    /* =========================================================================
+       7-E. RANDOM LADDER GAME & DRAWING LOTS (사다리타기 & 제비뽑기 복불복)
+       ========================================================================= */
+    let minigameState = {
+      tab: 'ladder', // 'ladder' | 'lots'
+      title: '☕ 커피·디저트 쏘기',
+      // 사다리 상태
+      ladderPrizes: [],
+      ladderRungs: [], // [{ col: 0..n-2, row: 0..steps-1 }]
+      ladderRevealed: false,
+      selectedCol: -1, // 특정 멤버 경로 하이라이트 (-1이면 전체)
+      ladderResults: [], // [{ friend, prize, endCol, path }]
+      // 제비뽑기 상태
+      lotsWinnerCount: 1,
+      lotsCards: [] // [{ friend, isWinner, flipped }]
+    };
+
+    function initMinigameState() {
+      const n = Math.max(2, appState.friends.length);
+      if (minigameState.ladderPrizes.length !== n) {
+        applyLadderPreset('coffee', false);
+      }
+      if (minigameState.lotsCards.length !== n) {
+        resetLotsCards(false);
+      }
+    }
+
+    function switchMinigameTab(tab) {
+      minigameState.tab = tab;
+      const root = document.getElementById('modalsRoot');
+      if (root) root.innerHTML = buildMinigameModalHtml();
+      if (tab === 'ladder') {
+        setTimeout(drawLadderCanvas, 40);
+      }
+    }
+
+    function applyLadderPreset(presetKey, rerender = true) {
+      const n = Math.max(2, appState.friends.length);
+      const prizes = new Array(n).fill('통과');
+      if (presetKey === 'coffee') {
+        minigameState.title = '☕ 커피·디저트 쏘기';
+        prizes[0] = '🎯 커피 쏘기!';
+      } else if (presetKey === 'snack') {
+        minigameState.title = '🍺 오늘 야식·음료 쏘기';
+        prizes[0] = '🎯 야식 쏘기!';
+      } else if (presetKey === 'duty') {
+        minigameState.title = '🚗 운전·심부름·정리 당번';
+        prizes[0] = '🎯 오늘 당번!';
+      } else if (presetKey === 'room') {
+        minigameState.title = '🛏️ 침대·방 자리 배정';
+        for (let i = 0; i < n; i++) prizes[i] = `${i + 1}번 자리`;
+      }
+      // 셔플해서 당첨 위치 랜덤 배치
+      for (let i = prizes.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [prizes[i], prizes[j]] = [prizes[j], prizes[i]];
+      }
+      minigameState.ladderPrizes = prizes;
+      minigameState.ladderRevealed = false;
+      minigameState.selectedCol = -1;
+      generateRandomLadderRungs();
+      if (rerender) {
+        const root = document.getElementById('modalsRoot');
+        if (root) root.innerHTML = buildMinigameModalHtml();
+        setTimeout(drawLadderCanvas, 40);
+      }
+    }
+
+    function updateLadderPrizeInput(idx, val) {
+      minigameState.ladderPrizes[idx] = val.trim() || '통과';
+      minigameState.ladderRevealed = false;
+      drawLadderCanvas();
+    }
+
+    function generateRandomLadderRungs() {
+      const n = Math.max(2, appState.friends.length);
+      const rows = 9;
+      const rungs = [];
+      for (let r = 0; r < rows; r++) {
+        let c = 0;
+        while (c < n - 1) {
+          if (Math.random() < 0.48) {
+            rungs.push({ row: r, col: c });
+            c += 2; // 인접 가로줄 겹침 방지
+          } else {
+            c += 1;
+          }
+        }
+      }
+      // 최소 각 열 사이에 가로줄 1개 이상 보장
+      for (let c = 0; c < n - 1; c++) {
+        if (!rungs.some(rg => rg.col === c)) {
+          const r = (c * 2 + 1) % rows;
+          if (!rungs.some(rg => rg.row === r && Math.abs(rg.col - c) <= 1)) {
+            rungs.push({ row: r, col: c });
+          }
+        }
+      }
+      minigameState.ladderRungs = rungs;
+      computeLadderPaths();
+    }
+
+    function computeLadderPaths() {
+      const friends = appState.friends;
+      const n = friends.length;
+      const rows = 9;
+      const results = [];
+
+      for (let startCol = 0; startCol < n; startCol++) {
+        let curCol = startCol;
+        const points = [{ col: curCol, row: -1 }];
+        for (let r = 0; r < rows; r++) {
+          points.push({ col: curCol, row: r });
+          const moveRight = minigameState.ladderRungs.find(rg => rg.row === r && rg.col === curCol);
+          const moveLeft = minigameState.ladderRungs.find(rg => rg.row === r && rg.col === curCol - 1);
+          if (moveRight) {
+            curCol += 1;
+            points.push({ col: curCol, row: r });
+          } else if (moveLeft) {
+            curCol -= 1;
+            points.push({ col: curCol, row: r });
+          }
+        }
+        points.push({ col: curCol, row: rows });
+        results.push({
+          friend: friends[startCol],
+          startCol,
+          endCol: curCol,
+          prize: minigameState.ladderPrizes[curCol] || '통과',
+          points
+        });
+      }
+      minigameState.ladderResults = results;
+    }
+
+    function startLadderReveal(focusCol = -1) {
+      if (!minigameState.ladderRungs || minigameState.ladderRungs.length === 0) {
+        generateRandomLadderRungs();
+      }
+      computeLadderPaths();
+      minigameState.ladderRevealed = true;
+      minigameState.selectedCol = focusCol;
+      const root = document.getElementById('modalsRoot');
+      if (root) root.innerHTML = buildMinigameModalHtml();
+      setTimeout(() => {
+        drawLadderCanvas();
+        if (window.confetti && focusCol === -1) {
+          window.confetti({ particleCount: 55, spread: 65, origin: { y: 0.7 } });
+        }
+      }, 40);
+    }
+
+    function drawLadderCanvas() {
+      const canvas = document.getElementById('ladderGameCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width;
+      const H = canvas.height;
+      const friends = appState.friends;
+      const n = Math.max(2, friends.length);
+      const rows = 9;
+
+      ctx.clearRect(0, 0, W, H);
+
+      const padX = Math.max(44, Math.floor(W / (n * 2)));
+      const stepX = n > 1 ? (W - padX * 2) / (n - 1) : 0;
+      const topY = 48;
+      const botY = H - 48;
+      const stepY = (botY - topY) / (rows + 1);
+
+      const getX = (col) => padX + col * stepX;
+      const getY = (row) => topY + (row + 1) * stepY;
+
+      // 1. 세로 기둥 그리기
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#cbd5e1';
+      for (let c = 0; c < n; c++) {
+        ctx.beginPath();
+        ctx.moveTo(getX(c), topY);
+        ctx.lineTo(getX(c), botY);
+        ctx.stroke();
+      }
+
+      // 2. 사다리 공개 전에는 중간 가림막(?) 표시, 공개 후에는 가로줄+경로 표시
+      if (!minigameState.ladderRevealed) {
+        drawRoundedRect(ctx, 24, topY + 22, W - 48, botY - topY - 44, 18);
+        ctx.fillStyle = '#6d28d9';
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 18px "Noto Sans KR", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🎲 [사다리 출발!] 또는 멤버 이름을 눌러주세요', W / 2, (topY + botY) / 2 + 6);
+      } else {
+        // 가로 다리 그리기
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#94a3b8';
+        minigameState.ladderRungs.forEach(rg => {
+          const y = getY(rg.row);
+          ctx.beginPath();
+          ctx.moveTo(getX(rg.col), y);
+          ctx.lineTo(getX(rg.col + 1), y);
+          ctx.stroke();
+        });
+
+        // 이동 경로 하이라이트
+        minigameState.ladderResults.forEach((res, idx) => {
+          if (minigameState.selectedCol !== -1 && minigameState.selectedCol !== idx) return;
+          ctx.strokeStyle = res.friend?.color || '#7c3aed';
+          ctx.lineWidth = minigameState.selectedCol === idx ? 6 : 4;
+          ctx.beginPath();
+          res.points.forEach((pt, pIdx) => {
+            const px = getX(pt.col);
+            const py = pt.row === -1 ? topY : pt.row === rows ? botY : getY(pt.row);
+            if (pIdx === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          });
+          ctx.stroke();
+        });
+      }
+
+      // 3. 상단 멤버 이름 및 하단 결과 박스
+      ctx.textAlign = 'center';
+      for (let c = 0; c < n; c++) {
+        const f = friends[c];
+        const x = getX(c);
+        // 상단 멤버 원
+        ctx.fillStyle = f?.color || '#006194';
+        ctx.beginPath();
+        ctx.arc(x, 22, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px "Noto Sans KR", sans-serif';
+        ctx.fillText((f?.name || '?').slice(0, 3), x, 26);
+
+        // 하단 당첨 텍스트
+        const prizeText = (minigameState.ladderPrizes[c] || '통과').slice(0, 7);
+        const isHit = prizeText.includes('🎯') || (!prizeText.includes('통과') && prizeText !== '꽝');
+        ctx.fillStyle = isHit ? '#7c3aed' : '#475569';
+        ctx.font = 'bold 12px "Noto Sans KR", sans-serif';
+        ctx.fillText(prizeText, x, H - 18);
+      }
+    }
+
+    // 제비뽑기 로직
+    function setLotsWinnerCount(delta) {
+      const maxW = Math.max(1, appState.friends.length - 1);
+      minigameState.lotsWinnerCount = Math.min(maxW, Math.max(1, minigameState.lotsWinnerCount + delta));
+      resetLotsCards(true);
+    }
+
+    function resetLotsCards(rerender = true) {
+      const friends = appState.friends;
+      const n = friends.length;
+      const winCount = Math.min(Math.max(1, minigameState.lotsWinnerCount), Math.max(1, n - 1));
+      const flags = new Array(n).fill(false);
+      for (let i = 0; i < winCount; i++) flags[i] = true;
+      for (let i = flags.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [flags[i], flags[j]] = [flags[j], flags[i]];
+      }
+      minigameState.lotsCards = friends.map((f, idx) => ({
+        friend: f,
+        isWinner: flags[idx],
+        flipped: false
+      }));
+      if (rerender) {
+        const root = document.getElementById('modalsRoot');
+        if (root) root.innerHTML = buildMinigameModalHtml();
+      }
+    }
+
+    function flipLotCard(idx) {
+      const card = minigameState.lotsCards[idx];
+      if (!card || card.flipped) return;
+      card.flipped = true;
+      const root = document.getElementById('modalsRoot');
+      if (root) root.innerHTML = buildMinigameModalHtml();
+      if (card.isWinner && window.confetti) {
+        window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      }
+    }
+
+    function flipAllLotsCards() {
+      minigameState.lotsCards.forEach(c => { c.flipped = true; });
+      const root = document.getElementById('modalsRoot');
+      if (root) root.innerHTML = buildMinigameModalHtml();
+      if (window.confetti) {
+        window.confetti({ particleCount: 65, spread: 70, origin: { y: 0.7 } });
+      }
+    }
+
+    function copyMinigameResultKakao() {
+      const title = document.getElementById('m_mg_title')?.value.trim() || minigameState.title || '복불복 게임';
+      minigameState.title = title;
+      let text = `🎲 [TripSync 복불복] '${title}' 결과 발표!\n─────────────────────\n`;
+      if (minigameState.tab === 'ladder') {
+        if (!minigameState.ladderRevealed) startLadderReveal(-1);
+        minigameState.ladderResults.forEach(r => {
+          text += `• ${r.friend?.name}: ${r.prize}\n`;
+        });
+      } else {
+        minigameState.lotsCards.forEach(c => {
+          text += `• ${c.friend?.name}: ${c.isWinner ? '🎯 당첨!' : '😌 통과'}\n`;
+        });
+      }
+      text += `─────────────────────\n결과에 승복하기! 😆`;
+      navigator.clipboard.writeText(text);
+      showToast('💬 카카오톡 공유용 복불복 결과가 복사되었습니다!');
+    }
+
+    function buildMinigameModalHtml() {
+      const friends = appState.friends;
+      const isLadder = minigameState.tab === 'ladder';
+      return `
+        <div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div class="bg-surface-container-lowest rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-outline-variant/30 space-y-3.5 my-6">
+            <div class="flex items-center justify-between pb-2 border-b border-surface-container-high">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[22px] text-primary">casino</span>
+                <div>
+                  <h3 class="text-base font-bold text-on-surface">여행 복불복 사다리 & 제비뽑기</h3>
+                  <p class="text-[11px] text-on-surface-variant">커피 내기 · 야식 당번 · 침대/방 배정</p>
+                </div>
+              </div>
+              <button onclick="closeModal()" class="p-1 text-on-surface-variant"><span class="material-symbols-outlined">close</span></button>
+            </div>
+
+            <!-- 게임 종류 탭 -->
+            <div class="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-surface-container-low border border-outline-variant/30 text-xs font-bold">
+              <button type="button" onclick="switchMinigameTab('ladder')" class="py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all ${isLadder ? 'bg-primary text-on-primary shadow-xs' : 'text-on-surface-variant'}">
+                <span>🪜 사다리타기</span>
+              </button>
+              <button type="button" onclick="switchMinigameTab('lots')" class="py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all ${!isLadder ? 'bg-primary text-on-primary shadow-xs' : 'text-on-surface-variant'}">
+                <span>🎟️ 제비뽑기</span>
+              </button>
+            </div>
+
+            <!-- 내기 제목 입력 & 빠른 프리셋 -->
+            <div class="space-y-1.5">
+              <input type="text" id="m_mg_title" value="${minigameState.title}" oninput="minigameState.title = this.value" placeholder="내기 주제를 입력하세요 (예: 커피 쏘기)" class="w-full p-2 rounded-xl border border-outline-variant bg-surface text-xs font-bold text-center" />
+              ${isLadder ? `
+                <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[11px] font-bold">
+                  <button type="button" onclick="applyLadderPreset('coffee')" class="px-2.5 py-1 rounded-full bg-surface-container text-on-surface hover:bg-primary-fixed shrink-0">☕ 커피 쏘기</button>
+                  <button type="button" onclick="applyLadderPreset('snack')" class="px-2.5 py-1 rounded-full bg-surface-container text-on-surface hover:bg-primary-fixed shrink-0">🍺 야식 쏘기</button>
+                  <button type="button" onclick="applyLadderPreset('duty')" class="px-2.5 py-1 rounded-full bg-surface-container text-on-surface hover:bg-primary-fixed shrink-0">🚗 오늘 당번</button>
+                  <button type="button" onclick="applyLadderPreset('room')" class="px-2.5 py-1 rounded-full bg-surface-container text-on-surface hover:bg-primary-fixed shrink-0">🛏️ 자리 배정</button>
+                </div>
+              ` : ''}
+            </div>
+
+            ${isLadder ? `
+              <!-- 사다리타기 영역 -->
+              <div class="space-y-2.5">
+                <!-- 멤버별 클릭 추적 버튼 -->
+                <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                  ${friends.map((f, idx) => `
+                    <button type="button" onclick="startLadderReveal(${idx})" class="px-2.5 py-1 rounded-full text-[11px] font-bold text-white shadow-xs active:scale-95 transition-all ${minigameState.selectedCol === idx ? 'ring-2 ring-offset-1 ring-primary' : ''}" style="background-color: ${f.color || '#006194'}">
+                      ${f.name} 출발
+                    </button>
+                  `).join('')}
+                </div>
+
+                <div class="rounded-2xl bg-surface-container-low border border-outline-variant/30 p-2">
+                  <canvas id="ladderGameCanvas" width="460" height="250" class="w-full h-auto"></canvas>
+                </div>
+
+                <!-- 하단 벌칙/당첨 항목 직접 수정 -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  ${friends.map((_, idx) => `
+                    <input type="text" value="${minigameState.ladderPrizes[idx] || '통과'}" oninput="updateLadderPrizeInput(${idx}, this.value)" class="p-1.5 rounded-lg border border-outline-variant/40 bg-surface text-[11px] font-bold text-center" placeholder="결과 ${idx + 1}" />
+                  `).join('')}
+                </div>
+
+                ${minigameState.ladderRevealed ? `
+                  <div class="p-3 rounded-2xl bg-primary-fixed/35 border border-primary/20 space-y-1">
+                    <span class="text-[11px] font-extrabold text-primary block">🎉 사다리 최종 결과</span>
+                    <div class="grid grid-cols-2 gap-1.5 text-xs">
+                      ${minigameState.ladderResults.map(r => `
+                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-surface">
+                          <span class="font-bold text-on-surface">${r.friend?.name}</span>
+                          <strong class="${r.prize.includes('🎯') || !r.prize.includes('통과') ? 'text-primary font-extrabold' : 'text-on-surface-variant'}">${r.prize}</strong>
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>
+                ` : ''}
+
+                <div class="grid grid-cols-3 gap-2">
+                  <button type="button" onclick="generateRandomLadderRungs(); minigameState.ladderRevealed = false; startLadderReveal(-1);" class="col-span-2 py-2.5 rounded-xl bg-primary text-on-primary text-xs font-bold shadow-sm active:scale-95 transition-all">
+                    🪜 전체 사다리 결과 보기!
+                  </button>
+                  <button type="button" onclick="copyMinigameResultKakao()" class="py-2.5 rounded-xl bg-amber-400 text-stone-900 text-xs font-bold shadow-xs active:scale-95 transition-all">
+                    💬 카톡 공유
+                  </button>
+                </div>
+              </div>
+            ` : `
+              <!-- 제비뽑기 영역 -->
+              <div class="space-y-3">
+                <div class="flex items-center justify-between px-3 py-2 rounded-2xl bg-surface-container-low border border-outline-variant/30 text-xs">
+                  <span class="font-bold text-on-surface">🎯 당첨(벌칙) 인원 수</span>
+                  <div class="flex items-center gap-2">
+                    <button type="button" onclick="setLotsWinnerCount(-1)" class="w-7 h-7 rounded-lg bg-surface-container font-bold">-</button>
+                    <strong class="text-sm font-black text-primary">${minigameState.lotsWinnerCount}명</strong>
+                    <button type="button" onclick="setLotsWinnerCount(1)" class="w-7 h-7 rounded-lg bg-surface-container font-bold">+</button>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                  ${minigameState.lotsCards.map((c, idx) => `
+                    <button type="button" onclick="flipLotCard(${idx})" class="p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1.5 min-h-[104px] shadow-xs active:scale-95 ${!c.flipped ? 'bg-surface-container-low border-dashed border-primary/40 hover:bg-primary-fixed/25' : c.isWinner ? 'bg-primary text-on-primary border-primary shadow-md' : 'bg-surface-container-lowest border-outline-variant/40 opacity-75'}">
+                      <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center" style="background-color: ${c.friend?.color || '#006194'}">${c.friend?.name?.[0] || '?'}</span>
+                        <span class="text-xs font-extrabold ${c.flipped && c.isWinner ? 'text-white' : 'text-on-surface'}">${c.friend?.name}</span>
+                      </div>
+                      ${!c.flipped ? `
+                        <span class="text-xs font-bold text-primary mt-1">🎴 터치해서 제비 열기</span>
+                      ` : c.isWinner ? `
+                        <span class="text-base font-black text-amber-300 mt-1">🎯 당첨!!</span>
+                      ` : `
+                        <span class="text-xs font-bold text-on-surface-variant mt-1">😌 휴~ 통과!</span>
+                      `}
+                    </button>
+                  `).join('')}
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                  <button type="button" onclick="resetLotsCards(true)" class="py-2.5 rounded-xl bg-surface-container text-on-surface text-xs font-bold">
+                    🔀 다시 섞기
+                  </button>
+                  <button type="button" onclick="flipAllLotsCards()" class="py-2.5 rounded-xl bg-primary text-on-primary text-xs font-bold shadow-sm">
+                    ⚡ 전체 공개
+                  </button>
+                  <button type="button" onclick="copyMinigameResultKakao()" class="py-2.5 rounded-xl bg-amber-400 text-stone-900 text-xs font-bold">
+                    💬 카톡 공유
+                  </button>
+                </div>
+              </div>
+            `}
+          </div>
+        </div>
+      `;
     }
 
     /* =========================================================================
