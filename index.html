@@ -164,17 +164,63 @@
         opacity: 1;
       }
     }
+
+    /* 9번: 다크 모드(야간 모드) 전체 테마 자동 오버라이드 */
+    html.dark body,
+    html.dark .bg-surface {
+      background-color: #0f172a !important;
+      color: #f1f5f9 !important;
+    }
+    html.dark header,
+    html.dark nav {
+      background-color: rgba(15, 23, 42, 0.88) !important;
+      border-color: #334155 !important;
+    }
+    html.dark .bg-surface-container-lowest {
+      background-color: #1e293b !important;
+      color: #f1f5f9 !important;
+    }
+    html.dark .bg-surface-container-low {
+      background-color: #172033 !important;
+      color: #e2e8f0 !important;
+    }
+    html.dark .bg-surface-container,
+    html.dark .bg-surface-container-high {
+      background-color: #334155 !important;
+      color: #f1f5f9 !important;
+    }
+    html.dark .text-on-surface {
+      color: #f8fafc !important;
+    }
+    html.dark .text-on-surface-variant {
+      color: #94a3b8 !important;
+    }
+    html.dark .border-outline-variant,
+    html.dark .border-surface-container-high {
+      border-color: #334155 !important;
+    }
+    html.dark input,
+    html.dark select,
+    html.dark textarea {
+      background-color: #0f172a !important;
+      color: #f8fafc !important;
+      border-color: #475569 !important;
+    }
   </style>
 </head>
 
 <body class="bg-surface text-on-surface antialiased flex flex-col min-h-screen">
-  <!-- Toast Notification -->
+  <!-- Toast Notification (10번: 5초 실행 취소 Undo 버튼 지원) -->
   <div id="toastNotification"
-    class="fixed top-20 inset-x-4 z-50 transform -translate-y-24 opacity-0 transition-all duration-300 pointer-events-none flex items-center justify-between px-4 py-3 rounded-2xl bg-inverse-surface text-inverse-on-surface shadow-2xl max-w-md mx-auto">
-    <div class="flex items-center gap-2">
-      <span class="material-symbols-outlined text-[20px] text-secondary-container">check_circle</span>
-      <span id="toastMessage" class="text-xs sm:text-sm font-semibold">알림 메시지</span>
+    class="fixed top-20 inset-x-4 z-50 transform -translate-y-24 opacity-0 transition-all duration-300 pointer-events-none flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-inverse-surface text-inverse-on-surface shadow-2xl max-w-md mx-auto">
+    <div class="flex items-center gap-2 min-w-0">
+      <span class="material-symbols-outlined text-[20px] text-secondary-container shrink-0">check_circle</span>
+      <span id="toastMessage" class="text-xs sm:text-sm font-semibold truncate">알림 메시지</span>
     </div>
+    <button id="toastUndoBtn" type="button"
+      class="hidden pointer-events-auto shrink-0 px-2.5 py-1 rounded-lg bg-amber-400 text-stone-900 text-xs font-extrabold shadow-xs active:scale-95 transition-all">
+      ↩️ 실행 취소
+    </button>
   </div>
 
   <!-- Header -->
@@ -200,6 +246,16 @@
           title="홈 화면에 앱 설치">
           <span class="material-symbols-outlined text-[16px]">install_mobile</span>
           <span class="hidden sm:inline">앱 설치</span>
+        </button>
+        <button onclick="openModal('tripArchiveModal')"
+          class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high/60 transition-colors"
+          title="내 여행 보관함 (새 여행 만들기 / 전환)">
+          <span class="material-symbols-outlined text-[20px]">folder_special</span>
+        </button>
+        <button id="btnDarkMode" onclick="toggleDarkMode()"
+          class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high/60 transition-colors"
+          title="다크 모드 전환">
+          <span class="material-symbols-outlined text-[20px]" id="iconDarkMode">dark_mode</span>
         </button>
         <button onclick="openModal('phrasebookModal')"
           class="w-10 h-10 flex items-center justify-center rounded-full text-primary bg-primary-fixed/60 hover:bg-primary-fixed transition-colors"
@@ -714,17 +770,40 @@
     /* =========================================================================
        3. TOAST & UTILS
        ========================================================================= */
-    function showToast(msg) {
+    let toastHideTimer = null;
+
+    function showToast(msg, undoCallback = null) {
       const toast = document.getElementById('toastNotification');
       const text = document.getElementById('toastMessage');
+      const undoBtn = document.getElementById('toastUndoBtn');
       if (!toast || !text) return;
+      if (toastHideTimer) clearTimeout(toastHideTimer);
+
       text.innerText = msg;
+      if (undoBtn) {
+        if (typeof undoCallback === 'function') {
+          undoBtn.classList.remove('hidden');
+          undoBtn.onclick = () => {
+            if (toastHideTimer) clearTimeout(toastHideTimer);
+            undoBtn.classList.add('hidden');
+            toast.classList.remove('translate-y-0', 'opacity-100');
+            toast.classList.add('-translate-y-24', 'opacity-0');
+            undoCallback();
+          };
+        } else {
+          undoBtn.classList.add('hidden');
+          undoBtn.onclick = null;
+        }
+      }
+
       toast.classList.remove('-translate-y-24', 'opacity-0');
       toast.classList.add('translate-y-0', 'opacity-100');
-      setTimeout(() => {
+      const duration = typeof undoCallback === 'function' ? 5000 : 2500;
+      toastHideTimer = setTimeout(() => {
         toast.classList.remove('translate-y-0', 'opacity-100');
         toast.classList.add('-translate-y-24', 'opacity-0');
-      }, 2500);
+        if (undoBtn) undoBtn.classList.add('hidden');
+      }, duration);
     }
 
     function calculateDDay() {
@@ -2145,6 +2224,9 @@
                           <button onclick="openTaxiCardForPlan('${plan.id}')" class="px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-900 dark:text-amber-200 text-[11px] font-bold hover:bg-amber-400/35 transition-all flex items-center gap-0.5" title="택시 기사님·현지인에게 보여주기 카드">
                             <span class="material-symbols-outlined text-[12px]">local_taxi</span> 택시 카드
                           </button>
+                          <button onclick="convertPlanToExpense('${plan.id}')" class="px-2 py-0.5 rounded-md bg-secondary/15 text-secondary text-[11px] font-bold hover:bg-secondary hover:text-on-secondary transition-all flex items-center gap-0.5" title="이 일정을 지출 정산 내역으로 바로 등록">
+                            <span class="material-symbols-outlined text-[12px]">payments</span> 정산 등록
+                          </button>
                           ${plan.placeUrl ? `<a href="${plan.placeUrl}" target="_blank" class="text-primary font-bold hover:underline text-[11px]">카카오맵</a>` : ''}
                         </div>
                       </div>
@@ -2404,6 +2486,9 @@
             </div>
           </div>
         </section>
+
+        <!-- 8번: 전체 목표 예산 게이지 & 카테고리별 지출 분석 차트 -->
+        ${buildBudgetAndCategoryChartHtml(settlement)}
 
         <!-- Member Balances -->
         <section class="flex flex-col gap-space-sm">
@@ -2765,22 +2850,48 @@
     }
 
     function deleteCandidate(cid) {
-      if (!confirm('후보 일정을 삭제하시겠습니까?')) return;
+      const target = appState.datePoll.candidates.find(c => c.id === cid);
+      if (!target) return;
+      const savedVotes = {};
+      Object.keys(appState.datePoll.votes).forEach(fid => {
+        if (appState.datePoll.votes[fid]?.[cid] !== undefined) {
+          savedVotes[fid] = appState.datePoll.votes[fid][cid];
+          delete appState.datePoll.votes[fid][cid];
+        }
+      });
       markItemDeleted(cid);
       appState.datePoll.candidates = appState.datePoll.candidates.filter(c => c.id !== cid);
-      Object.keys(appState.datePoll.votes).forEach(fid => {
-        delete appState.datePoll.votes[fid]?.[cid];
-      });
       saveState();
       renderScheduleView();
+      showToast('🗑️ 후보 일정이 삭제되었습니다.', () => {
+        if (appState.deletedIds) delete appState.deletedIds[cid];
+        appState.datePoll.candidates.push(target);
+        Object.entries(savedVotes).forEach(([fid, v]) => {
+          if (!appState.datePoll.votes[fid]) appState.datePoll.votes[fid] = {};
+          appState.datePoll.votes[fid][cid] = v;
+        });
+        saveState();
+        renderScheduleView();
+        showToast('↩️ 후보 일정이 복구되었습니다!');
+      });
     }
 
     function deleteFriend(fid) {
-      if (!confirm('친구를 삭제하시겠습니까? 관련 지출 및 투표 내역에서도 제외됩니다.')) return;
+      const target = appState.friends.find(f => f.id === fid);
+      if (!target) return;
+      if (!confirm(`'${target.name}' 친구를 삭제하시겠습니까?`)) return;
+      const idx = appState.friends.findIndex(f => f.id === fid);
       markItemDeleted(fid);
       appState.friends = appState.friends.filter(f => f.id !== fid);
       saveState();
       renderAll();
+      showToast(`🗑️ '${target.name}' 멤버가 삭제되었습니다.`, () => {
+        if (appState.deletedIds) delete appState.deletedIds[fid];
+        appState.friends.splice(idx, 0, target);
+        saveState();
+        renderAll();
+        showToast(`↩️ '${target.name}' 멤버가 복구되었습니다!`);
+      });
     }
 
     function setSelectedDay(d) {
@@ -2799,11 +2910,68 @@
     }
 
     function deletePlan(pid) {
-      if (!confirm('일정을 삭제하시겠습니까?')) return;
+      const target = appState.plans.find(p => p.id === pid);
+      if (!target) return;
+      const idx = appState.plans.findIndex(p => p.id === pid);
       markItemDeleted(pid);
       appState.plans = appState.plans.filter(p => p.id !== pid);
       saveState();
       renderPlanView();
+      showToast(`🗑️ '${target.title}' 일정이 삭제되었습니다.`, () => {
+        if (appState.deletedIds) delete appState.deletedIds[pid];
+        appState.plans.splice(idx, 0, target);
+        saveState();
+        renderPlanView();
+        showToast('↩️ 삭제한 일정이 복구되었습니다!');
+      });
+    }
+
+    function convertPlanToExpense(pid) {
+      const plan = appState.plans.find(p => p.id === pid);
+      if (!plan) return;
+      const mapCat = {
+        meal: 'meal',
+        cafe: 'cafe',
+        stay: 'stay',
+        transport: 'transport',
+        sightseeing: 'activity',
+        activity: 'activity',
+        shopping: 'shopping',
+        other: 'other'
+      };
+      // 여행 시작일 + (day-1)로 날짜 계산
+      let expDate = new Date().toISOString().slice(0, 10);
+      try {
+        if (appState.tripInfo?.startDate) {
+          const [y, m, d] = appState.tripInfo.startDate.split('-').map(Number);
+          const dt = new Date(y, m - 1, d + (plan.day - 1));
+          expDate = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        }
+      } catch (e) {}
+
+      openModal('expenseModal');
+      setTimeout(() => {
+        const titleEl = document.getElementById('m_e_title');
+        const curEl = document.getElementById('m_e_currency');
+        const krwEl = document.getElementById('m_e_amount');
+        const catEl = document.getElementById('m_e_cat');
+        const locEl = document.getElementById('m_e_loc');
+        const dateEl = document.getElementById('m_e_date');
+        const memoEl = document.getElementById('m_e_memo');
+
+        if (titleEl) titleEl.value = plan.title || '';
+        if (curEl) {
+          curEl.value = 'KRW';
+          onExpenseCurrencyChange();
+        }
+        if (krwEl && plan.costEstimate > 0) krwEl.value = plan.costEstimate;
+        if (catEl) catEl.value = mapCat[plan.category] || 'other';
+        if (locEl) locEl.value = plan.location || '';
+        if (dateEl) dateEl.value = expDate;
+        if (memoEl && plan.memo) memoEl.value = plan.memo;
+        updateExpenseCurrencyCalc();
+        showToast('💸 일정 정보가 지출 등록 창에 자동으로 입력되었습니다!');
+      }, 60);
     }
 
     function setExpenseFilter(f) {
@@ -2838,11 +3006,20 @@
     }
 
     function deleteExpense(eid) {
-      if (!confirm('지출 내역을 삭제하시겠습니까?')) return;
+      const target = appState.expenses.find(e => e.id === eid);
+      if (!target) return;
+      const idx = appState.expenses.findIndex(e => e.id === eid);
       markItemDeleted(eid);
       appState.expenses = appState.expenses.filter(e => e.id !== eid);
       saveState();
       renderExpenseView();
+      showToast(`🗑️ '${target.title}' 지출 내역이 삭제되었습니다.`, () => {
+        if (appState.deletedIds) delete appState.deletedIds[eid];
+        appState.expenses.splice(idx, 0, target);
+        saveState();
+        renderExpenseView();
+        showToast('↩️ 삭제한 지출 내역이 복구되었습니다!');
+      });
     }
 
     function setChecklistFilter(f) {
@@ -2902,11 +3079,20 @@
     }
 
     function deleteChecklist(cid) {
-      if (!confirm('준비물을 삭제하시겠습니까?')) return;
+      const target = appState.checklists.find(c => c.id === cid);
+      if (!target) return;
+      const idx = appState.checklists.findIndex(c => c.id === cid);
       markItemDeleted(cid);
       appState.checklists = appState.checklists.filter(c => c.id !== cid);
       saveState();
       renderChecklistView();
+      showToast(`🗑️ '${target.text}' 준비물이 삭제되었습니다.`, () => {
+        if (appState.deletedIds) delete appState.deletedIds[cid];
+        appState.checklists.splice(idx, 0, target);
+        saveState();
+        renderChecklistView();
+        showToast('↩️ 삭제한 준비물이 복구되었습니다!');
+      });
     }
 
     /* =========================================================================
@@ -3445,6 +3631,7 @@
                     <input type="file" accept=".json" onchange="importDataJson(event)" class="hidden" />
                   </label>
                 </div>
+                ${buildStorageUsageBarHtml()}
               </div>
 
               <div class="flex justify-between items-center pt-2 border-t border-surface-container-high">
@@ -3457,6 +3644,8 @@
 
         // QR코드 렌더링
         setTimeout(renderModalQRCode, 60);
+      } else if (type === 'tripArchiveModal') {
+        root.innerHTML = buildTripArchiveModalHtml();
       } else if (type === 'phrasebookModal') {
         const curLang = selectedPhraseLang || detectDestinationLang();
         selectedPhraseLang = curLang;
@@ -5140,9 +5329,337 @@
     }
 
     /* =========================================================================
+       7-D. BUDGET GAUGE & CATEGORY CHART (8번) / DARK MODE & MULTI-TRIP (9번) / STORAGE MONITOR (10번)
+       ========================================================================= */
+    const CATEGORY_CHART_COLORS = {
+      meal: '#006194',
+      cafe: '#0284c7',
+      stay: '#006c49',
+      transport: '#d97706',
+      activity: '#7c3aed',
+      shopping: '#db2777',
+      snack: '#e11d48',
+      other: '#64748b'
+    };
+
+    function promptSetTripBudget() {
+      const cur = appState.tripInfo.budget || 1000000;
+      const input = prompt('이번 여행의 전체 목표 예산(원화)을 입력해주세요:\n(0을 입력하면 예산 게이지를 숨깁니다)', String(cur));
+      if (input === null) return;
+      const val = parseInt(input.replace(/,/g, '').trim(), 10);
+      appState.tripInfo.budget = isNaN(val) || val < 0 ? 0 : val;
+      appState.tripInfo._updatedAt = Date.now();
+      saveState();
+      renderExpenseView();
+      showToast(appState.tripInfo.budget > 0
+        ? `💰 목표 예산이 ${appState.tripInfo.budget.toLocaleString()}원으로 설정되었습니다!`
+        : '예산 표시가 해제되었습니다.');
+    }
+
+    function buildBudgetAndCategoryChartHtml(settlement) {
+      const total = settlement.totalExpenses || 0;
+      const budget = appState.tripInfo.budget !== undefined ? Number(appState.tripInfo.budget) : 1000000;
+      const pct = budget > 0 ? Math.min(100, Math.round((total / budget) * 100)) : 0;
+      const rawPct = budget > 0 ? Math.round((total / budget) * 100) : 0;
+      const remain = budget - total;
+      const barColor = rawPct >= 100 ? 'bg-error' : rawPct >= 80 ? 'bg-amber-500' : 'bg-secondary';
+
+      // 카테고리별 집계
+      const catSums = {};
+      appState.expenses.forEach(e => {
+        const c = e.category || 'other';
+        catSums[c] = (catSums[c] || 0) + (Math.round(e.amount) || 0);
+      });
+      const catEntries = Object.entries(catSums)
+        .filter(([, v]) => v > 0)
+        .sort((a, b) => b[1] - a[1]);
+
+      return `
+        <section class="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 shadow-sm space-y-3.5">
+          <!-- 목표 예산 게이지 -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px] text-primary">account_balance_wallet</span>
+                <span class="text-xs sm:text-sm font-bold text-on-surface">전체 목표 예산 & 소진율</span>
+              </div>
+              <button onclick="promptSetTripBudget()" class="px-2.5 py-0.5 rounded-lg bg-surface-container text-primary text-[11px] font-bold hover:bg-primary-fixed transition-colors">
+                ${budget > 0 ? `목표 ${budget.toLocaleString()}원 수정` : '+ 목표 예산 설정'}
+              </button>
+            </div>
+
+            ${budget > 0 ? `
+              <div class="w-full h-3 bg-surface-container-high rounded-full overflow-hidden">
+                <div class="h-full ${barColor} transition-all duration-500 rounded-full" style="width: ${pct}%"></div>
+              </div>
+              <div class="flex items-center justify-between text-[11px] mt-1.5 font-semibold">
+                <span class="${rawPct >= 100 ? 'text-error font-bold' : 'text-on-surface-variant'}">
+                  예산의 <strong>${rawPct}%</strong> 사용 (${total.toLocaleString()}원)
+                </span>
+                <span class="${remain >= 0 ? 'text-secondary font-bold' : 'text-error font-bold'}">
+                  ${remain >= 0 ? `남은 예산 ${remain.toLocaleString()}원` : `⚠️ 예산 ${Math.abs(remain).toLocaleString()}원 초과`}
+                </span>
+              </div>
+            ` : `
+              <p class="text-[11px] text-on-surface-variant">우측 상단 [+ 목표 예산 설정]을 누르면 실시간 예산 소진율 게이지가 표시됩니다.</p>
+            `}
+          </div>
+
+          <!-- 카테고리별 지출 비중 차트 -->
+          ${total > 0 && catEntries.length > 0 ? `
+            <div class="pt-2.5 border-t border-surface-container-high space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-on-surface">📊 카테고리별 지출 비중</span>
+                <span class="text-[11px] text-on-surface-variant">총 ${catEntries.length}개 분야</span>
+              </div>
+              <!-- 누적 비율 바 -->
+              <div class="w-full h-3.5 rounded-full overflow-hidden flex bg-surface-container">
+                ${catEntries.map(([cat, val]) => {
+                  const w = Math.max(3, Math.round((val / total) * 100));
+                  const col = CATEGORY_CHART_COLORS[cat] || '#64748b';
+                  const lbl = EXPENSE_CATEGORIES[cat]?.label || '기타';
+                  return `<div style="width: ${w}%; background-color: ${col};" title="${lbl}: ${val.toLocaleString()}원 (${w}%)"></div>`;
+                }).join('')}
+              </div>
+              <!-- 범례 칩 -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-0.5">
+                ${catEntries.map(([cat, val]) => {
+                  const sharePct = Math.round((val / total) * 100);
+                  const col = CATEGORY_CHART_COLORS[cat] || '#64748b';
+                  const lbl = EXPENSE_CATEGORIES[cat]?.label || '기타';
+                  return `
+                    <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-surface-container-low text-[11px]">
+                      <span class="flex items-center gap-1.5 font-semibold text-on-surface truncate">
+                        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${col}"></span>
+                        <span class="truncate">${lbl}</span>
+                      </span>
+                      <span class="font-bold text-on-surface shrink-0">${sharePct}% <span class="text-[10px] font-normal text-on-surface-variant">(${Math.round(val / 1000)}천)</span></span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </section>
+      `;
+    }
+
+    // 9번: 다크 모드(야간 모드)
+    const DARK_MODE_KEY = 'TRIP_SYNC_DARK_MODE';
+    function initDarkMode() {
+      const saved = localStorage.getItem(DARK_MODE_KEY);
+      if (saved === 'true') {
+        document.documentElement.classList.add('dark');
+      }
+      updateDarkModeIcon();
+    }
+
+    function toggleDarkMode() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem(DARK_MODE_KEY, isDark ? 'true' : 'false');
+      updateDarkModeIcon();
+      showToast(isDark ? '🌙 야간 다크 모드가 켜졌습니다.' : '☀️ 라이트 모드로 전환되었습니다.');
+    }
+
+    function updateDarkModeIcon() {
+      const icon = document.getElementById('iconDarkMode');
+      if (icon) {
+        icon.innerText = document.documentElement.classList.contains('dark') ? 'light_mode' : 'dark_mode';
+      }
+    }
+
+    // 9번: 멀티 트립(여러 여행) 보관함
+    const ARCHIVE_KEY = 'TRIP_SYNC_ARCHIVE_V1';
+    function loadTripArchiveList() {
+      try {
+        const raw = localStorage.getItem(ARCHIVE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveTripArchiveList(list) {
+      localStorage.setItem(ARCHIVE_KEY, JSON.stringify(list));
+    }
+
+    function saveCurrentTripToArchive(silent = false) {
+      const list = loadTripArchiveList();
+      const curId = appState.tripInfo.id || 'trip-1';
+      const entry = {
+        id: curId,
+        title: appState.tripInfo.title,
+        destination: appState.tripInfo.destination,
+        startDate: appState.tripInfo.startDate,
+        endDate: appState.tripInfo.endDate,
+        coverEmoji: appState.tripInfo.coverEmoji || '✈️',
+        savedAt: Date.now(),
+        state: JSON.parse(JSON.stringify(appState))
+      };
+      const idx = list.findIndex(item => item.id === curId);
+      if (idx >= 0) list[idx] = entry;
+      else list.unshift(entry);
+      saveTripArchiveList(list);
+      if (!silent) {
+        openModal('tripArchiveModal');
+        showToast(`🗂️ '${entry.title}' 여행이 보관함에 저장되었습니다!`);
+      }
+    }
+
+    function createNewBlankTrip() {
+      const title = prompt('새로 만들 여행 제목을 입력하세요:', '우리들의 새 여행 ✈️');
+      if (!title || !title.trim()) return;
+      const dest = prompt('여행 목적지를 입력하세요 (예: 도쿄, 제주, 방콕, 강릉):', '일본 도쿄') || '여행지';
+
+      // 현재 여행 자동 보관
+      saveCurrentTripToArchive(true);
+
+      const today = new Date().toISOString().slice(0, 10);
+      appState = {
+        version: 1,
+        updatedAt: Date.now(),
+        deletedIds: {},
+        tripInfo: {
+          id: `trip_${Date.now()}`,
+          title: title.trim(),
+          destination: dest.trim(),
+          startDate: today,
+          endDate: today,
+          coverEmoji: '✈️',
+          memo: '',
+          budget: 1000000,
+          _updatedAt: Date.now()
+        },
+        friends: [
+          { id: 'f1', name: '멤버1', color: '#006194', accountInfo: '' },
+          { id: 'f2', name: '멤버2', color: '#006c49', accountInfo: '' }
+        ],
+        datePoll: { candidates: [], votes: {}, voteMeta: {} },
+        plans: [],
+        expenses: [],
+        checklists: []
+      };
+      selectedDay = 1;
+      saveState();
+      saveCurrentTripToArchive(true);
+      closeModal();
+      renderAll();
+      showToast(`🎉 새 여행 [${title.trim()}]이 시작되었습니다! (기존 여행은 보관함에 안전하게 저장됨)`);
+    }
+
+    function switchArchivedTrip(archiveId) {
+      const list = loadTripArchiveList();
+      const target = list.find(item => item.id === archiveId);
+      if (!target || !target.state) return;
+      // 전환 전 현재 여행 자동 저장
+      saveCurrentTripToArchive(true);
+      appState = JSON.parse(JSON.stringify(target.state));
+      selectedDay = 1;
+      saveState();
+      closeModal();
+      renderAll();
+      showToast(`📂 [${appState.tripInfo.title}] 여행을 불러왔습니다!`);
+    }
+
+    function deleteArchivedTrip(archiveId) {
+      const list = loadTripArchiveList().filter(item => item.id !== archiveId);
+      saveTripArchiveList(list);
+      openModal('tripArchiveModal');
+      showToast('보관함에서 여행을 삭제했습니다.');
+    }
+
+    function buildTripArchiveModalHtml() {
+      const list = loadTripArchiveList();
+      const curId = appState.tripInfo.id || 'trip-1';
+      return `
+        <div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div class="bg-surface-container-lowest rounded-3xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/30 space-y-4 my-6">
+            <div class="flex items-center justify-between pb-2 border-b border-surface-container-high">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[22px] text-primary">folder_special</span>
+                <div>
+                  <h3 class="text-base font-bold text-on-surface">내 여행 보관함 (멀티 트립)</h3>
+                  <p class="text-[11px] text-on-surface-variant">여러 여행을 보관하고 언제든 전환하세요</p>
+                </div>
+              </div>
+              <button onclick="closeModal()" class="p-1 text-on-surface-variant"><span class="material-symbols-outlined">close</span></button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" onclick="saveCurrentTripToArchive(false)" class="py-2.5 rounded-xl bg-primary-fixed text-primary text-xs font-bold flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">bookmark_add</span>
+                <span>현재 여행 보관</span>
+              </button>
+              <button type="button" onclick="createNewBlankTrip()" class="py-2.5 rounded-xl bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1 shadow-xs">
+                <span class="material-symbols-outlined text-[16px]">add_circle</span>
+                <span>새 여행 만들기</span>
+              </button>
+            </div>
+
+            <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
+              ${list.length === 0 ? `
+                <div class="p-5 text-center rounded-2xl bg-surface-container-low text-xs text-on-surface-variant">
+                  아직 보관된 여행이 없습니다.<br/>[현재 여행 보관] 또는 [새 여행 만들기]를 눌러보세요!
+                </div>
+              ` : list.map(item => {
+                const isCurrent = item.id === curId;
+                return `
+                  <div class="p-3 rounded-2xl border ${isCurrent ? 'bg-primary-fixed/30 border-primary/40' : 'bg-surface-container-low border-outline-variant/30'} flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1.5">
+                        <span>${item.coverEmoji || '✈️'}</span>
+                        <strong class="text-xs sm:text-sm font-bold text-on-surface truncate">${item.title}</strong>
+                        ${isCurrent ? `<span class="px-1.5 py-0.2 rounded-full bg-primary text-on-primary text-[9px] font-bold">현재 열림</span>` : ''}
+                      </div>
+                      <p class="text-[11px] text-on-surface-variant mt-0.5">${item.destination} · ${item.startDate} ~ ${item.endDate}</p>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                      ${!isCurrent ? `
+                        <button type="button" onclick="switchArchivedTrip('${item.id}')" class="px-2.5 py-1 rounded-lg bg-primary text-on-primary text-[11px] font-bold">불러오기</button>
+                      ` : ''}
+                      <button type="button" onclick="deleteArchivedTrip('${item.id}')" class="p-1 text-on-surface-variant hover:text-error" title="삭제">
+                        <span class="material-symbols-outlined text-[16px]">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 10번: 저장 용량 모니터
+    function buildStorageUsageBarHtml() {
+      try {
+        const bytes = new Blob([JSON.stringify(appState)]).size;
+        const kb = (bytes / 1024).toFixed(1);
+        const maxKb = 4500;
+        const pct = Math.min(100, Math.round((bytes / (maxKb * 1024)) * 100));
+        const photoCount = appState.plans.filter(p => p.photoDataUrl).length;
+        const barColor = pct >= 85 ? 'bg-error' : pct >= 60 ? 'bg-amber-500' : 'bg-secondary';
+        return `
+          <div class="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-1 text-[11px]">
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-on-surface-variant">💾 데이터 저장 용량 (인증샷 ${photoCount}장 포함)</span>
+              <span class="font-bold ${pct >= 85 ? 'text-error' : 'text-secondary'}">${kb} KB / 4,500 KB (${pct}%)</span>
+            </div>
+            <div class="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+              <div class="h-full ${barColor} rounded-full" style="width: ${Math.max(2, pct)}%"></div>
+            </div>
+          </div>
+        `;
+      } catch (e) {
+        return '';
+      }
+    }
+
+    /* =========================================================================
        8. INITIALIZATION
        ========================================================================= */
     window.addEventListener('DOMContentLoaded', async () => {
+      initDarkMode();
       initPwaSupport();
       renderAll();
       // 1. 로컬 Wi-Fi 서버 정보 조회 및 동기화 (실행 중인 경우)
