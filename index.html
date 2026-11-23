@@ -640,8 +640,11 @@
       return JSON.parse(JSON.stringify(DEFAULT_DATA));
     }
 
+    let logicalClockCounter = 0;
     function getLogicalNow() {
-      return Math.max(Date.now(), (typeof appState !== 'undefined' && appState?.updatedAt ? appState.updatedAt : 0) + 1);
+      const base = Math.max(Date.now(), (typeof appState !== 'undefined' && appState?.updatedAt ? appState.updatedAt : 0));
+      logicalClockCounter = Math.max(base + 1, logicalClockCounter + 1);
+      return logicalClockCounter;
     }
 
     function saveState() {
@@ -663,7 +666,8 @@
       else if (syncConfig.gistId && syncConfig.githubToken && syncConfig.autoSync) {
         debouncePush();
       } else if (syncConfig.gistId && !syncConfig.githubToken) {
-        showToast('⚠️ 읽기 전용 상태입니다. 다른 기기와 동기화하려면 [채팅방 비밀번호]를 입력하세요.');
+        openModal('syncModal');
+        showToast('🔑 휴대폰 수정 내용을 PC로 보내려면 [채팅방 비밀번호]를 1회 입력하거나 PC의 QR코드를 스캔하세요!');
       }
     }
 
@@ -1242,6 +1246,7 @@
 
     let lastGistEtag = null;
     let cachedRemoteGistData = null;
+    let lastKnownRemoteFp = '';
 
     function getDataContentFingerprint(state) {
       if (!state || !state.tripInfo) return '';
@@ -1328,26 +1333,28 @@
         const remoteFp = getDataContentFingerprint(remoteData);
 
         if (localFp !== remoteFp) {
-          if (hasUnsyncedLocalChanges) {
-            // 로컬에서도 수정한 내역이 있으면 양쪽 항목을 스마트 병합!
+          // 만약 내가 로컬에서 수정한 적 없거나, 다른 기기에서 서버 데이터를 새로 바꾼 경우에만 반영
+          if (!hasUnsyncedLocalChanges) {
+            appState = remoteData;
+            lastKnownRemoteFp = remoteFp;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+            renderAll();
+            showToast('🔄 다른 기기의 최신 수정 내용이 반영되었습니다!');
+          } else if (lastKnownRemoteFp && remoteFp !== lastKnownRemoteFp) {
+            // 내가 수정하는 동시에 다른 기기도 서버를 수정한 경우 -> 스마트 병합 후 업로드
             appState = smartMergeTripStates(appState, remoteData);
+            lastKnownRemoteFp = remoteFp;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
             renderAll();
             if (syncConfig.githubToken) {
               await pushToGist(false);
-              showToast('🔄 PC와 휴대폰의 변경 내역이 합쳐져 동기화되었습니다!');
-            } else {
-              showToast('🔄 서버 최신 데이터와 병합되었습니다! (업로드하려면 비밀번호 입력 필요)');
             }
-          } else {
-            // 기기 간 시계 차이(updatedAt)와 무관하게 서버 최신 데이터를 즉시 반영!
-            appState = remoteData;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-            renderAll();
-            showToast('🔄 최신 데이터로 동기화되었습니다!');
           }
-        } else if (!silent) {
-          showToast('✅ PC·휴대폰 데이터가 이미 일치합니다!');
+        } else {
+          lastKnownRemoteFp = remoteFp;
+          if (!silent) {
+            showToast('✅ PC·휴대폰 데이터가 모두 최신 상태입니다!');
+          }
         }
         syncConfig.lastSyncedAt = Date.now();
         renderHeader();
@@ -1377,13 +1384,16 @@
       isPushingGist = true;
       if (notify) showToast('최신 내역 병합 후 채팅방에 저장 중...');
       try {
-        // 저장 직전 최신본을 먼저 조회해 동시 수정 내용을 항목 단위로 자동 병합
+        // 저장 직전: 내가 마지막으로 동기화한 이후에 '다른 기기'가 서버를 바꾼 경우에만 병합!
         let mergedRemote = false;
         try {
           const latest = await fetchRemoteGistData();
-          if (latest.ok && latest.data && getDataContentFingerprint(latest.data) !== getDataContentFingerprint(appState)) {
-            appState = smartMergeTripStates(appState, latest.data);
-            mergedRemote = true;
+          if (latest.ok && latest.data) {
+            const latestFp = getDataContentFingerprint(latest.data);
+            if (lastKnownRemoteFp && latestFp !== lastKnownRemoteFp && latestFp !== getDataContentFingerprint(appState)) {
+              appState = smartMergeTripStates(appState, latest.data);
+              mergedRemote = true;
+            }
           }
         } catch (e) {
           // 사전 조회 실패 시 현재 로컬 상태로 저장 진행
@@ -1421,6 +1431,7 @@
         }
         if (res.ok) {
           hasUnsyncedLocalChanges = false;
+          lastKnownRemoteFp = getDataContentFingerprint(appState);
           syncConfig.gistId = cleanGistId;
           syncConfig.githubToken = cleanToken;
           syncConfig.lastSyncedAt = appState.updatedAt;
@@ -3349,7 +3360,7 @@
       if (!appState.datePoll.votes[friendId]) appState.datePoll.votes[friendId] = {};
       if (!appState.datePoll.voteMeta) appState.datePoll.voteMeta = {};
       appState.datePoll.votes[friendId][candidateId] = status;
-      appState.datePoll.voteMeta[`${friendId}:${candidateId}`] = Date.now();
+      appState.datePoll.voteMeta[`${friendId}:${candidateId}`] = getLogicalNow();
       saveState();
       renderScheduleView();
     }
@@ -3376,7 +3387,7 @@
         }
         appState.tripInfo.startDate = startStr;
         appState.tripInfo.endDate = endStr;
-        appState.tripInfo._updatedAt = Date.now();
+        appState.tripInfo._updatedAt = getLogicalNow();
         saveState();
         renderAll();
         showToast(`📅 여행 일정이 [${startStr} ~ ${endStr}]로 확정되었습니다!`);
@@ -3440,7 +3451,7 @@
       const p = appState.plans.find(item => item.id === pid);
       if (p) {
         p.completed = !p.completed;
-        p._updatedAt = Date.now();
+        p._updatedAt = getLogicalNow();
       }
       saveState();
       renderPlanView();
@@ -3576,7 +3587,7 @@
         type: type.value,
         assignedTo: (type.value === 'shared' && assignee?.value) ? assignee.value : undefined,
         completed: false,
-        _updatedAt: Date.now()
+        _updatedAt: getLogicalNow()
       });
       input.value = '';
       saveState();
@@ -3587,7 +3598,7 @@
       const item = appState.checklists.find(c => c.id === cid);
       if (!item) return;
       item.assignedTo = friendId || undefined;
-      item._updatedAt = Date.now();
+      item._updatedAt = getLogicalNow();
       saveState();
       renderChecklistView();
       showToast('👥 준비물 담당자가 변경되었습니다.');
@@ -3599,7 +3610,7 @@
       const newText = prompt('준비물 이름을 수정하세요:', item.text);
       if (newText === null || !newText.trim()) return;
       item.text = newText.trim();
-      item._updatedAt = Date.now();
+      item._updatedAt = getLogicalNow();
       saveState();
       renderChecklistView();
       showToast('준비물 항목이 수정되었습니다.');
@@ -3609,7 +3620,7 @@
       const item = appState.checklists.find(c => c.id === cid);
       if (item) {
         item.completed = !item.completed;
-        item._updatedAt = Date.now();
+        item._updatedAt = getLogicalNow();
       }
       saveState();
       renderChecklistView();
@@ -4243,7 +4254,7 @@
       const p = appState.plans.find(item => item.id === planId);
       if (!p) return;
       p.rating = p.rating === rating ? 0 : rating;
-      p._updatedAt = Date.now();
+      p._updatedAt = getLogicalNow();
       saveState();
       renderPlanView();
       if (p.rating > 0) showToast(`⭐ '${p.title}'에 ${p.rating}점을 남겼습니다!`);
@@ -4290,7 +4301,7 @@
         if (p) {
           p.photoDataUrl = dataUrl;
           if (!p.rating) p.rating = 5;
-          p._updatedAt = Date.now();
+          p._updatedAt = getLogicalNow();
           saveState();
           renderPlanView();
           showToast('📸 여행 인증샷이 등록되었습니다!');
@@ -4306,7 +4317,7 @@
       const p = appState.plans.find(item => item.id === planId);
       if (!p) return;
       delete p.photoDataUrl;
-      p._updatedAt = Date.now();
+      p._updatedAt = getLogicalNow();
       saveState();
       renderPlanView();
       showToast('인증샷이 삭제되었습니다.');
@@ -4901,7 +4912,7 @@
       appState.tripInfo.startDate = document.getElementById('m_start').value;
       appState.tripInfo.endDate = document.getElementById('m_end').value;
       appState.tripInfo.memo = document.getElementById('m_memo').value.trim();
-      appState.tripInfo._updatedAt = Date.now();
+      appState.tripInfo._updatedAt = getLogicalNow();
       saveState();
       closeModal();
       renderAll();
@@ -4917,7 +4928,7 @@
         id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
         dateStr: date,
         notes: notes || undefined,
-        _updatedAt: Date.now()
+        _updatedAt: getLogicalNow()
       });
       saveState();
       closeModal();
@@ -4938,7 +4949,7 @@
           f.name = name;
           f.color = color;
           f.accountInfo = acc;
-          f._updatedAt = Date.now();
+          f._updatedAt = getLogicalNow();
         }
       } else {
         appState.friends.push({
@@ -4946,7 +4957,7 @@
           name,
           color,
           accountInfo: acc,
-          _updatedAt: Date.now()
+          _updatedAt: getLogicalNow()
         });
       }
       saveState();
@@ -5107,9 +5118,9 @@
 
       if (editId) {
         const p = appState.plans.find(item => item.id === editId);
-        if (p) Object.assign(p, payload, { _updatedAt: Date.now() });
+        if (p) Object.assign(p, payload, { _updatedAt: getLogicalNow() });
       } else {
-        appState.plans.push({ id: `p_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, _updatedAt: Date.now(), ...payload });
+        appState.plans.push({ id: `p_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, _updatedAt: getLogicalNow(), ...payload });
       }
       saveState();
       closeModal();
@@ -5543,9 +5554,9 @@
 
       if (editId) {
         const exp = appState.expenses.find(item => item.id === editId);
-        if (exp) Object.assign(exp, payload, { _updatedAt: Date.now() });
+        if (exp) Object.assign(exp, payload, { _updatedAt: getLogicalNow() });
       } else {
-        appState.expenses.unshift({ id: `e_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, createdAt: Date.now(), _updatedAt: Date.now(), ...payload });
+        appState.expenses.unshift({ id: `e_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, createdAt: Date.now(), _updatedAt: getLogicalNow(), ...payload });
       }
       saveState();
       closeModal();
@@ -5939,7 +5950,7 @@
       if (input === null) return;
       const val = parseInt(input.replace(/,/g, '').trim(), 10);
       appState.tripInfo.budget = isNaN(val) || val < 0 ? 0 : val;
-      appState.tripInfo._updatedAt = Date.now();
+      appState.tripInfo._updatedAt = getLogicalNow();
       saveState();
       renderExpenseView();
       showToast(appState.tripInfo.budget > 0
@@ -6217,7 +6228,7 @@
           coverEmoji: '✈️',
           memo: '',
           budget: 1000000,
-          _updatedAt: Date.now()
+          _updatedAt: getLogicalNow()
         },
         friends: [
           { id: 'f1', name: '멤버1', color: '#006194', accountInfo: '' },
