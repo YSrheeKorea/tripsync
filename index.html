@@ -455,7 +455,7 @@
 
     const DEFAULT_DATA = {
       version: 1,
-      updatedAt: Date.now(),
+      updatedAt: 0,
       tripInfo: {
         id: 'trip-1',
         title: '우정 뿜뿜 후쿠오카 ✈️',
@@ -640,8 +640,13 @@
       return JSON.parse(JSON.stringify(DEFAULT_DATA));
     }
 
+    function getLogicalNow() {
+      return Math.max(Date.now(), (typeof appState !== 'undefined' && appState?.updatedAt ? appState.updatedAt : 0) + 1);
+    }
+
     function saveState() {
-      appState.updatedAt = Date.now();
+      appState.updatedAt = getLogicalNow();
+      hasUnsyncedLocalChanges = true;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
       renderHeader();
 
@@ -658,7 +663,7 @@
       else if (syncConfig.gistId && syncConfig.githubToken && syncConfig.autoSync) {
         debouncePush();
       } else if (syncConfig.gistId && !syncConfig.githubToken) {
-        showToast('⚠️ 읽기 전용 연결입니다. 친구들과 동기화하려면 채팅방 비밀번호를 입력하세요.');
+        showToast('⚠️ 읽기 전용 상태입니다. 다른 기기와 동기화하려면 [채팅방 비밀번호]를 입력하세요.');
       }
     }
 
@@ -1094,7 +1099,7 @@
 
     function markItemDeleted(id) {
       if (!appState.deletedIds) appState.deletedIds = {};
-      appState.deletedIds[id] = Date.now();
+      appState.deletedIds[id] = getLogicalNow();
     }
 
     function mergeCollectionById(localArr = [], remoteArr = [], deletedIds = {}, sortByCreatedDesc = false) {
@@ -1238,29 +1243,47 @@
     let lastGistEtag = null;
     let cachedRemoteGistData = null;
 
+    function getDataContentFingerprint(state) {
+      if (!state || !state.tripInfo) return '';
+      return JSON.stringify({
+        t: state.tripInfo.title,
+        d: state.tripInfo.destination,
+        s: state.tripInfo.startDate,
+        e: state.tripInfo.endDate,
+        m: state.tripInfo.memo,
+        b: state.tripInfo.budget,
+        f: (state.friends || []).map(x => `${x.id}:${x.name}:${x.accountInfo || ''}`),
+        p: (state.plans || []).map(x => `${x.id}:${x.day}:${x.time}:${x.title}:${x.completed}:${x.rating || 0}:${Boolean(x.photoDataUrl)}`),
+        x: (state.expenses || []).map(x => `${x.id}:${x.title}:${x.amount}:${x.payerId}:${(x.participantIds || []).join(',')}`),
+        c: (state.checklists || []).map(x => `${x.id}:${x.text}:${x.completed}:${x.assignedTo || ''}`),
+        v: state.datePoll?.votes || {},
+        ca: (state.datePoll?.candidates || []).map(x => `${x.id}:${x.dateStr}`)
+      });
+    }
+
     async function fetchRemoteGistData() {
       const gistId = sanitizeGistId(syncConfig.gistId || DEFAULT_GIST_ID);
       if (!gistId) return { ok: false, statusText: '아이디 없음', data: null };
 
       const cleanToken = sanitizeToken(syncConfig.githubToken);
 
-      // 1차 시도: GitHub API 조회 (ETag 조건부 요청으로 모바일 LTE/5G 속도제한 방지)
+      // 1차 시도: GitHub API 실시간 조회 (브라우저 캐시 완전 무시 cache: 'no-store')
       try {
         const headers = { 'Accept': 'application/vnd.github.v3+json' };
         if (cleanToken) headers['Authorization'] = `Bearer ${cleanToken}`;
-        if (lastGistEtag && cachedRemoteGistData) headers['If-None-Match'] = lastGistEtag;
 
-        const apiUrl = cleanToken
-          ? `https://api.github.com/gists/${gistId}?t=${Date.now()}`
-          : `https://api.github.com/gists/${gistId}`;
-        const res = await fetch(apiUrl, { headers });
+        const apiUrl = `https://api.github.com/gists/${gistId}?t=${Date.now()}`;
+        let res = await fetch(apiUrl, { headers, cache: 'no-store' });
 
-        if (res.status === 304 && cachedRemoteGistData) {
-          return { ok: true, data: cachedRemoteGistData };
+        // 토큰이 만료/오류(401)인 경우에도 읽기는 성공하도록 토큰 없이 즉시 재시도
+        if (res.status === 401 && cleanToken) {
+          res = await fetch(apiUrl, {
+            headers: { 'Accept': 'application/vnd.github.v3+json' },
+            cache: 'no-store'
+          });
         }
+
         if (res.ok) {
-          const etag = res.headers.get('ETag');
-          if (etag) lastGistEtag = etag;
           const data = await res.json();
           const file = data.files?.[GIST_FILENAME] || Object.values(data.files || {}).find(f => f.filename.endsWith('.json'));
           if (file && file.content) {
@@ -1272,11 +1295,10 @@
         // 2차 Raw URL 폴백으로 계속 진행
       }
 
-      // 2차 폴백: 모바일 LTE/5G 통신사 공용 IP에서 GitHub API 60회/시간 제한(403)에 걸렸거나 토큰 오류(401)일 때
-      // 속도 제한이 전혀 없는 gist.githubusercontent.com/raw 엔드포인트로 직접 읽어오기
+      // 2차 폴백: 모바일 LTE/5G 통신사 공용 IP에서 GitHub API 60회/시간 제한(403)에 걸렸을 때
       try {
         const rawUrl = `https://gist.githubusercontent.com/raw/${gistId}/${GIST_FILENAME}?t=${Date.now()}`;
-        const rawRes = await fetch(rawUrl);
+        const rawRes = await fetch(rawUrl, { cache: 'no-store' });
         if (rawRes.ok) {
           const parsed = await rawRes.json();
           cachedRemoteGistData = parsed;
@@ -1284,7 +1306,7 @@
         }
         return { ok: false, statusText: `HTTP ${rawRes.status}`, data: null };
       } catch (err) {
-        return { ok: false, statusText: '모바일 네트워크 연결 확인 필요', data: null };
+        return { ok: false, statusText: '네트워크 연결 확인 필요', data: null };
       }
     }
 
@@ -1292,7 +1314,7 @@
       syncModalInputsToConfig();
       if (!syncConfig.gistId) syncConfig.gistId = DEFAULT_GIST_ID;
       if (isPushingGist) return;
-      if (!silent) showToast('채팅방에서 최신 데이터를 가져오는 중...');
+      if (!silent) showToast('채팅방에서 최신 데이터를 확인하는 중...');
       try {
         const result = await fetchRemoteGistData();
         if (!result.ok) {
@@ -1300,17 +1322,32 @@
           return;
         }
         const remoteData = result.data;
-        if (!remoteData) return;
+        if (!remoteData || !remoteData.tripInfo) return;
 
-        if ((remoteData.updatedAt || 0) > (appState.updatedAt || 0)) {
-          appState = hasUnsyncedLocalChanges
-            ? smartMergeTripStates(appState, remoteData)
-            : remoteData;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-          renderAll();
-          showToast('🔄 최신 데이터로 동기화되었습니다!');
+        const localFp = getDataContentFingerprint(appState);
+        const remoteFp = getDataContentFingerprint(remoteData);
+
+        if (localFp !== remoteFp) {
+          if (hasUnsyncedLocalChanges) {
+            // 로컬에서도 수정한 내역이 있으면 양쪽 항목을 스마트 병합!
+            appState = smartMergeTripStates(appState, remoteData);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+            renderAll();
+            if (syncConfig.githubToken) {
+              await pushToGist(false);
+              showToast('🔄 PC와 휴대폰의 변경 내역이 합쳐져 동기화되었습니다!');
+            } else {
+              showToast('🔄 서버 최신 데이터와 병합되었습니다! (업로드하려면 비밀번호 입력 필요)');
+            }
+          } else {
+            // 기기 간 시계 차이(updatedAt)와 무관하게 서버 최신 데이터를 즉시 반영!
+            appState = remoteData;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+            renderAll();
+            showToast('🔄 최신 데이터로 동기화되었습니다!');
+          }
         } else if (!silent) {
-          showToast('✅ 이미 최신 상태입니다!');
+          showToast('✅ PC·휴대폰 데이터가 이미 일치합니다!');
         }
         syncConfig.lastSyncedAt = Date.now();
         renderHeader();
@@ -1344,7 +1381,7 @@
         let mergedRemote = false;
         try {
           const latest = await fetchRemoteGistData();
-          if (latest.ok && latest.data && (latest.data.updatedAt || 0) > (syncConfig.lastSyncedAt || 0)) {
+          if (latest.ok && latest.data && getDataContentFingerprint(latest.data) !== getDataContentFingerprint(appState)) {
             appState = smartMergeTripStates(appState, latest.data);
             mergedRemote = true;
           }
@@ -1352,7 +1389,7 @@
           // 사전 조회 실패 시 현재 로컬 상태로 저장 진행
         }
 
-        appState.updatedAt = Date.now();
+        appState.updatedAt = getLogicalNow();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
 
         const payload = {
@@ -1540,7 +1577,22 @@
     }
 
     async function manualSync() {
-      showToast('동기화 상태 확인 중...');
+      syncModalInputsToConfig();
+      if (!syncConfig.gistId) syncConfig.gistId = DEFAULT_GIST_ID;
+
+      // 로컬 수정사항이 있고 비밀번호가 입력되어 있으면 -> 병합 업로드(Push) 우선 실행!
+      if (hasUnsyncedLocalChanges && syncConfig.githubToken) {
+        await pushToGist(true);
+        return;
+      }
+      // 로컬 수정사항이 있는데 비밀번호가 없으면 -> 최신본 병합 후 비밀번호 입력 안내!
+      if (hasUnsyncedLocalChanges && !syncConfig.githubToken) {
+        await fetchFromGist(true);
+        openModal('syncModal');
+        showToast('🔑 이 기기에서 수정한 내용을 다른 기기로 보내려면 [채팅방 비밀번호]를 입력해주세요!');
+        return;
+      }
+      // 그 외에는 서버 최신본 즉시 받아오기
       if (syncConfig.gistId) {
         await fetchFromGist(false);
         return;
