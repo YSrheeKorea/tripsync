@@ -451,6 +451,7 @@
        ========================================================================= */
     const STORAGE_KEY = 'TRAVEL_SYNC_APP_DATA_V1';
     const SYNC_KEY = 'TRAVEL_SYNC_CONFIG_V1';
+    const DEFAULT_GIST_ID = 'be2859366fd55199f3697b92f6a84b8d';
 
     const DEFAULT_DATA = {
       version: 1,
@@ -670,8 +671,6 @@
       }
       return `${cityPrefix}-${suffix}`;
     }
-
-    const DEFAULT_GIST_ID = 'be2859366fd55199f3697b92f6a84b8d';
 
     function sanitizeGistId(raw) {
       if (!raw) return '';
@@ -1445,8 +1444,9 @@
 
     function getShareUrl() {
       let baseHref = window.location.href;
-      // localhost로 열었을 때 스마트폰 QR 스캔이 가능하도록 PC의 실제 LAN IP로 자동 치환
-      if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && serverInfo.url) {
+      if (window.location.protocol === 'file:') {
+        baseHref = 'https://ysrheekorea.github.io/tripsync/';
+      } else if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && serverInfo.url) {
         baseHref = serverInfo.url + window.location.pathname;
       }
       const url = new URL(baseHref);
@@ -3073,8 +3073,8 @@
           </div>
           <div class="grid grid-cols-2 gap-2">
             ${Object.values(SUPPORTED_THEMES).map(t => {
-              const isSel = curTheme === t.id;
-              return `
+        const isSel = curTheme === t.id;
+        return `
                 <button type="button" onclick="applyTheme('${t.id}', true); renderSettingsView();" class="p-3 rounded-2xl border-2 text-left transition-all flex items-center gap-2.5 ${isSel ? 'border-primary bg-primary-fixed/30 shadow-xs' : 'border-outline-variant/30 bg-surface-container-low hover:bg-surface-container'}">
                   <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs" style="background-color: ${t.dotColor}">
                     <span class="material-symbols-outlined text-[17px]">${t.icon}</span>
@@ -3087,7 +3087,7 @@
                   </div>
                 </button>
               `;
-            }).join('')}
+      }).join('')}
           </div>
         </section>
 
