@@ -1639,11 +1639,132 @@
       showToast('전체 동선에 맞게 지도를 조정했습니다.');
     }
 
+    /* =========================================================================
+       4-B. AI ROUTE OPTIMIZER (최단 이동 동선 자동 계산 - Haversine + 2-opt)
+       ========================================================================= */
+    let lastRouteUndoSnapshot = null;
+
+    function haversineKm(lat1, lng1, lat2, lng2) {
+      const toRad = d => (d * Math.PI) / 180;
+      const R = 6371;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function calculateRouteDistanceKm(orderedPlans) {
+      let total = 0;
+      for (let i = 0; i < orderedPlans.length - 1; i++) {
+        total += haversineKm(
+          orderedPlans[i].lat, orderedPlans[i].lng,
+          orderedPlans[i + 1].lat, orderedPlans[i + 1].lng
+        );
+      }
+      return total;
+    }
+
+    function optimizeDayRoute(day) {
+      const dayPlans = appState.plans
+        .filter(p => p.day === day)
+        .sort((a, b) => a.time.localeCompare(b.time));
+      const withCoords = dayPlans.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number' && !isNaN(p.lat) && !isNaN(p.lng));
+
+      if (withCoords.length < 3) {
+        showToast('좌표가 등록된 일정이 3곳 이상일 때 동선 최적화가 가능합니다.');
+        return;
+      }
+
+      const beforeKm = calculateRouteDistanceKm(withCoords);
+
+      // 되돌리기용 스냅샷 저장
+      lastRouteUndoSnapshot = {
+        day,
+        times: withCoords.map(p => ({ id: p.id, time: p.time }))
+      };
+
+      // 1단계: 첫 번째 일정(출발지)을 고정하고 Nearest-Neighbor 탐색
+      const remaining = withCoords.slice(1);
+      const route = [withCoords[0]];
+      while (remaining.length > 0) {
+        const last = route[route.length - 1];
+        let bestIdx = 0;
+        let bestDist = Infinity;
+        remaining.forEach((cand, idx) => {
+          const d = haversineKm(last.lat, last.lng, cand.lat, cand.lng);
+          if (d < bestDist) {
+            bestDist = d;
+            bestIdx = idx;
+          }
+        });
+        route.push(remaining.splice(bestIdx, 1)[0]);
+      }
+
+      // 2단계: 2-opt 교차 경로 제거로 최단 동선 정밀 최적화
+      let improved = true;
+      let guard = 0;
+      while (improved && guard < 40) {
+        improved = false;
+        guard++;
+        for (let i = 1; i < route.length - 1; i++) {
+          for (let j = i + 1; j < route.length; j++) {
+            const candidate = [
+              ...route.slice(0, i),
+              ...route.slice(i, j + 1).reverse(),
+              ...route.slice(j + 1)
+            ];
+            if (calculateRouteDistanceKm(candidate) + 0.001 < calculateRouteDistanceKm(route)) {
+              route.splice(0, route.length, ...candidate);
+              improved = true;
+            }
+          }
+        }
+      }
+
+      const afterKm = calculateRouteDistanceKm(route);
+      if (beforeKm - afterKm < 0.05) {
+        lastRouteUndoSnapshot = null;
+        showToast(`✅ Day ${day} 일정은 이미 최단 동선입니다! (총 ${beforeKm.toFixed(1)}km)`);
+        return;
+      }
+
+      // 기존 시간 슬롯을 최적화된 순서대로 재배치
+      const sortedTimes = withCoords.map(p => p.time).sort((a, b) => a.localeCompare(b));
+      const now = Date.now();
+      route.forEach((plan, idx) => {
+        plan.time = sortedTimes[idx];
+        plan._updatedAt = now;
+      });
+
+      saveState();
+      renderPlanView();
+      const savedKm = (beforeKm - afterKm).toFixed(1);
+      showToast(`✨ 최단 동선 최적화 완료! ${beforeKm.toFixed(1)}km → ${afterKm.toFixed(1)}km (${savedKm}km 단축)`);
+    }
+
+    function undoRouteOptimization() {
+      if (!lastRouteUndoSnapshot) return;
+      const now = Date.now();
+      lastRouteUndoSnapshot.times.forEach(({ id, time }) => {
+        const p = appState.plans.find(item => item.id === id);
+        if (p) {
+          p.time = time;
+          p._updatedAt = now;
+        }
+      });
+      lastRouteUndoSnapshot = null;
+      saveState();
+      renderPlanView();
+      showToast('↩️ 이전 일정 순서로 되돌렸습니다.');
+    }
+
     function renderPlanView() {
       const container = document.getElementById('viewPlan');
       const totalDays = calculateTotalDays();
       const dayPlans = appState.plans.filter(p => p.day === selectedDay).sort((a, b) => a.time.localeCompare(b.time));
       const dayPlansWithCoords = dayPlans.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
+      const dayDistanceKm = dayPlansWithCoords.length >= 2 ? calculateRouteDistanceKm(dayPlansWithCoords) : 0;
       const dayCost = dayPlans.reduce((s, p) => s + (p.costEstimate || 0), 0);
 
       let timelineHtml = '';
@@ -1767,14 +1888,26 @@
                 <span class="material-symbols-outlined text-[18px]">polyline</span>
               </div>
               <div>
-                <h3 class="text-xs font-bold text-on-surface flex items-center gap-1.5">
+                <h3 class="text-xs font-bold text-on-surface flex items-center gap-1.5 flex-wrap">
                   <span>Day ${selectedDay} 이동 동선 지도</span>
-                  <span class="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-primary/10 text-primary">${dayPlansWithCoords.length}개 위치 핀</span>
+                  <span class="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-primary/10 text-primary">${dayPlansWithCoords.length}개 핀</span>
+                  ${dayDistanceKm > 0 ? `<span class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-secondary/15 text-secondary">총 ${dayDistanceKm.toFixed(1)}km</span>` : ''}
                 </h3>
                 <p class="text-[10px] text-on-surface-variant">일정 번호 순으로 점선 경로가 연결됩니다</p>
               </div>
             </div>
-            <div class="flex items-center gap-1">
+            <div class="flex items-center gap-1 shrink-0">
+              ${dayPlansWithCoords.length >= 3 ? `
+                <button onclick="optimizeDayRoute(${selectedDay})" class="px-2 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-[11px] font-bold flex items-center gap-0.5 transition-all active:scale-95" title="첫 일정 기준으로 최단 이동 동선 자동 정렬">
+                  <span class="material-symbols-outlined text-[14px]">auto_fix_high</span>
+                  <span>동선 최적화</span>
+                </button>
+              ` : ''}
+              ${lastRouteUndoSnapshot && lastRouteUndoSnapshot.day === selectedDay ? `
+                <button onclick="undoRouteOptimization()" class="px-2 py-1 rounded-lg bg-surface-container text-on-surface-variant hover:text-primary text-[11px] font-bold flex items-center gap-0.5" title="최적화 이전 순서로 되돌리기">
+                  <span class="material-symbols-outlined text-[14px]">undo</span>
+                </button>
+              ` : ''}
               <button onclick="toggleMapHeight()" class="px-2 py-1 rounded-lg text-[11px] font-bold text-on-surface-variant hover:bg-surface-container flex items-center gap-1" id="btnToggleMap">
                 <span class="material-symbols-outlined text-[15px]" id="iconToggleMap">unfold_less</span>
                 <span id="textToggleMap">축소</span>
@@ -2537,6 +2670,34 @@
               </div>
 
               <form onsubmit="handleSaveExpense(event, '${exp ? exp.id : ''}')" class="space-y-3">
+                <!-- AI 영수증 사진 OCR & 결제 문자 자동 인식 (100% 무료 · 브라우저 내 로컬 처리) -->
+                <div class="p-3 rounded-2xl bg-primary-fixed/35 border border-primary/20 space-y-2">
+                  <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <div class="flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-[16px] text-primary">document_scanner</span>
+                      <span class="text-xs font-bold text-primary">AI 영수증 · 결제문자 자동 입력</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <label class="px-2.5 py-1 rounded-lg bg-primary text-on-primary text-[11px] font-bold cursor-pointer hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 shadow-xs">
+                        <span class="material-symbols-outlined text-[13px]">photo_camera</span>
+                        <span>영수증 사진</span>
+                        <input type="file" accept="image/*" onchange="handleReceiptImageUpload(event)" class="hidden" />
+                      </label>
+                      <button type="button" onclick="toggleSmartTextParserBox()" class="px-2.5 py-1 rounded-lg bg-surface text-primary border border-primary/30 text-[11px] font-bold hover:bg-primary/5 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[13px]">sms</span>
+                        <span>문자 붙여넣기</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div id="receiptOcrStatus" class="hidden text-[11px] font-semibold text-primary bg-surface/80 rounded-xl p-2 border border-primary/15"></div>
+                  <div id="smartTextParserBox" class="hidden space-y-1.5 pt-1">
+                    <textarea id="m_e_smart_text" rows="2" placeholder="카드 승인 문자나 영수증 텍스트를 붙여넣으세요&#10;예: [신한카드] 07/15 이치란라멘 7,500엔 승인" class="w-full p-2 rounded-xl border border-outline-variant bg-surface text-xs resize-none"></textarea>
+                    <div class="flex justify-end">
+                      <button type="button" onclick="handleSmartTextParse()" class="px-3 py-1 rounded-lg bg-primary text-on-primary text-[11px] font-bold">자동 추출 적용</button>
+                    </div>
+                  </div>
+                </div>
+
                 <input type="text" id="m_e_title" value="${exp ? exp.title : ''}" placeholder="어디서 무엇을 결제했나요? (예: 모츠나베 마에다야)" class="w-full p-2.5 rounded-xl border border-outline-variant bg-surface text-sm" required autofocus />
 
                 <!-- 결제 통화 선택 -->
@@ -3120,6 +3281,215 @@
       const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
       checkboxes.forEach(cb => cb.checked = anyUnchecked);
       updateExpenseCurrencyCalc();
+    }
+
+    /* =========================================================================
+       7-B. AI 영수증 사진 OCR & 결제 문자 자동 파서 (100% 무료 · 로컬 처리)
+       ========================================================================= */
+    let tesseractLoadPromise = null;
+
+    function loadTesseractScript() {
+      if (typeof window.Tesseract !== 'undefined') return Promise.resolve(window.Tesseract);
+      if (tesseractLoadPromise) return tesseractLoadPromise;
+      tesseractLoadPromise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+        s.onload = () => resolve(window.Tesseract);
+        s.onerror = () => {
+          tesseractLoadPromise = null;
+          reject(new Error('OCR 엔진 로드 실패'));
+        };
+        document.head.appendChild(s);
+      });
+      return tesseractLoadPromise;
+    }
+
+    function toggleSmartTextParserBox() {
+      const box = document.getElementById('smartTextParserBox');
+      if (box) box.classList.toggle('hidden');
+    }
+
+    function detectCategoryFromText(text) {
+      const t = text.toLowerCase();
+      if (/라멘|ramen|스시|sushi|나베|식당|맛집|식사|고기|치킨|버거|피자|우동|소바|덮밥|돈까스|야키니쿠|restaurant|bistro|grill|kitchen|음식/.test(t)) return 'meal';
+      if (/카페|cafe|coffee|커피|스타벅스|starbucks|베이커리|빵|디저트|아이스크림|투썸|이디야|블루보틀/.test(t)) return 'cafe';
+      if (/호텔|hotel|숙소|에어비앤비|airbnb|료칸|리조트|resort|inn|호스텔|게스트하우스/.test(t)) return 'stay';
+      if (/택시|taxi|지하철|metro|subway|버스|bus|공항|airport|jr|철도|신칸센|항공|주유|주차|uber|grab|교통/.test(t)) return 'transport';
+      if (/이자카야|맥주|술|주점|포장마차|야식|bar|pub|beer|하이볼|와인|호프/.test(t)) return 'snack';
+      if (/돈키호테|don\s?quijote|편의점|로손|lawson|세븐|seven|7-eleven|패밀리마트|familymart|마트|면세|쇼핑|유니클로|uniqlo|백화점|올리브영|다이소/.test(t)) return 'shopping';
+      if (/타워|tower|입장권|티켓|ticket|박물관|미술관|온천|테마파크|유니버설|디즈니|수족관|전망대|투어/.test(t)) return 'activity';
+      return 'other';
+    }
+
+    function parseReceiptText(rawText) {
+      const text = (rawText || '').replace(/\r/g, '\n');
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+      // 1. 통화 감지
+      let currency = 'KRW';
+      if (/¥|￥|円|jpy|엔/i.test(text)) currency = 'JPY';
+      else if (/nt\$|twd|대만달러|대만/i.test(text)) currency = 'TWD';
+      else if (/\$|usd|달러/i.test(text)) currency = 'USD';
+      else if (/€|eur|유로/i.test(text)) currency = 'EUR';
+      else if (/₫|vnd|동(?:\s|$)/i.test(text)) currency = 'VND';
+      else if (/฿|thb|바트/i.test(text)) currency = 'THB';
+      else if (/원|krw/i.test(text)) currency = 'KRW';
+
+      // 2. 금액 추출 (합계/결제금액 키워드 줄 최우선)
+      const totalLineRegex = /(합계|총액|총금액|결제금액|승인금액|받을금액|카드결제|合計|お買上|領収|お支払|total|amount|grand\s*total|balance\s*due)/i;
+      const extractNumbers = (str) => {
+        // 전화번호·날짜·카드번호 형태 제거
+        const cleaned = str
+          .replace(/\d{2,4}[-./]\d{1,2}[-./]\d{1,2}/g, ' ')
+          .replace(/\d{1,2}:\d{2}(:\d{2})?/g, ' ')
+          .replace(/\d{2,4}-\d{3,4}-\d{4}/g, ' ');
+        const matches = cleaned.match(/\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?/g) || [];
+        return matches
+          .map(m => parseFloat(m.replace(/,/g, '')))
+          .filter(n => !isNaN(n) && n >= 1 && n <= 100000000);
+      };
+
+      let amount = 0;
+      for (const line of lines) {
+        if (totalLineRegex.test(line)) {
+          const nums = extractNumbers(line);
+          if (nums.length > 0) {
+            amount = Math.max(amount, ...nums);
+          }
+        }
+      }
+      // 통화 기호가 직접 붙은 숫자 우선 탐색 (예: 7,500엔, ¥3,200, 14,500원, $25.50)
+      if (!amount) {
+        const curNumRegex = /(?:[¥￥$€₫฿]\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?))|(?:(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\s*(?:원|엔|円|달러|유로|바트|동|KRW|JPY|USD|EUR|VND|THB|TWD))/gi;
+        let m;
+        while ((m = curNumRegex.exec(text)) !== null) {
+          const val = parseFloat((m[1] || m[2] || '0').replace(/,/g, ''));
+          if (val > amount && val <= 100000000) amount = val;
+        }
+      }
+      // 그래도 없으면 전체에서 가장 큰 합리적 금액 선택
+      if (!amount) {
+        const allNums = extractNumbers(text).filter(n => n >= 10 && n <= 50000000);
+        if (allNums.length > 0) amount = Math.max(...allNums);
+      }
+
+      // 3. 날짜 추출
+      let date = '';
+      const fullDate = text.match(/(20\d{2})[-./년\s]+(\d{1,2})[-./월\s]+(\d{1,2})/);
+      if (fullDate) {
+        date = `${fullDate[1]}-${fullDate[2].padStart(2, '0')}-${fullDate[3].padStart(2, '0')}`;
+      } else {
+        const shortDate = text.match(/(?:^|\s)(\d{1,2})[/.](\d{1,2})(?:\s|$)/);
+        if (shortDate) {
+          const yr = (appState.tripInfo.startDate || new Date().toISOString()).slice(0, 4);
+          date = `${yr}-${shortDate[1].padStart(2, '0')}-${shortDate[2].padStart(2, '0')}`;
+        }
+      }
+
+      // 4. 상호명/제목 추출
+      const skipHeaderRegex = /^(\[?(web발신|신한|국민|삼성|현대|롯데|우리|하나|농협|카카오|토스|비씨|bc|카드)\]?|영수증|신용카드|매출전표|receipt|tax|tel|fax|사업자|대표자|주소|승인|일시|거래|\d+[-./:\s\d]+)$/i;
+      let title = '';
+      // 카드 문자 형식: "[신한카드] 07/15 19:30 이치란라멘 7,500엔 승인"
+      if (lines.length <= 2) {
+        const cleanedLine = text
+          .replace(/\[[^\]]+\]/g, ' ')
+          .replace(/(20\d{2}[-./])?\d{1,2}[-./]\d{1,2}/g, ' ')
+          .replace(/\d{1,2}:\d{2}(:\d{2})?/g, ' ')
+          .replace(/[¥￥$€₫฿]?\s*\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?\s*(?:원|엔|円|달러|유로|바트|동|KRW|JPY|USD|EUR|VND|THB|TWD)?/gi, ' ')
+          .replace(/(승인|결제|취소|일시불|할부|누적|잔액|사용|님|카드)/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (cleanedLine.length >= 2) title = cleanedLine.slice(0, 32);
+      }
+      if (!title) {
+        for (const line of lines.slice(0, 8)) {
+          const clean = line.replace(/[=*#\-_]{2,}/g, '').trim();
+          if (clean.length >= 2 && clean.length <= 36 && !skipHeaderRegex.test(clean) && !/^\d[\d,.\s원엔¥$]+$/.test(clean)) {
+            title = clean;
+            break;
+          }
+        }
+      }
+
+      const category = detectCategoryFromText(text);
+      return { title, currency, amount, date, category };
+    }
+
+    function applyParsedReceiptToModal(parsed, sourceLabel) {
+      const titleEl = document.getElementById('m_e_title');
+      const curEl = document.getElementById('m_e_currency');
+      const foreignEl = document.getElementById('m_e_foreign_amount');
+      const krwEl = document.getElementById('m_e_amount');
+      const dateEl = document.getElementById('m_e_date');
+      const catEl = document.getElementById('m_e_cat');
+
+      if (parsed.title && titleEl) titleEl.value = parsed.title;
+      if (parsed.currency && curEl && SUPPORTED_CURRENCIES[parsed.currency]) {
+        curEl.value = parsed.currency;
+        onExpenseCurrencyChange();
+      }
+      if (parsed.amount > 0) {
+        if (parsed.currency === 'KRW' && krwEl) {
+          krwEl.value = Math.round(parsed.amount);
+        } else if (foreignEl) {
+          foreignEl.value = parsed.amount;
+        }
+      }
+      if (parsed.date && dateEl) dateEl.value = parsed.date;
+      if (parsed.category && catEl) catEl.value = parsed.category;
+
+      updateExpenseCurrencyCalc();
+
+      const statusEl = document.getElementById('receiptOcrStatus');
+      if (statusEl) {
+        statusEl.classList.remove('hidden');
+        const curInfo = SUPPORTED_CURRENCIES[parsed.currency || 'KRW'];
+        statusEl.innerHTML = `✅ ${sourceLabel} 완료! ${parsed.title ? `[${parsed.title}] ` : ''}${parsed.amount > 0 ? `${parsed.amount.toLocaleString()}${curInfo.unit}` : '금액을 확인해주세요'} — 내용을 확인 후 저장하세요.`;
+      }
+      showToast(`✨ ${sourceLabel}으로 지출 내역이 자동 입력되었습니다!`);
+    }
+
+    function handleSmartTextParse() {
+      const text = document.getElementById('m_e_smart_text')?.value || '';
+      if (!text.trim()) {
+        alert('결제 문자나 영수증 내용을 붙여넣어주세요.');
+        return;
+      }
+      const parsed = parseReceiptText(text);
+      applyParsedReceiptToModal(parsed, '결제 문자 자동 분석');
+    }
+
+    async function handleReceiptImageUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const statusEl = document.getElementById('receiptOcrStatus');
+      if (statusEl) {
+        statusEl.classList.remove('hidden');
+        statusEl.innerHTML = '⏳ 브라우저 내 무료 AI OCR 엔진 준비 중... (사진은 외부 서버로 전송되지 않습니다)';
+      }
+
+      try {
+        const Tesseract = await loadTesseractScript();
+        const result = await Tesseract.recognize(file, 'kor+eng+jpn', {
+          logger: (m) => {
+            if (statusEl && m.status === 'recognizing text') {
+              const pct = Math.round((m.progress || 0) * 100);
+              statusEl.innerHTML = `🔍 영수증 글자 인식 중... ${pct}% (로컬 처리)`;
+            }
+          }
+        });
+        const rawText = result?.data?.text || '';
+        if (!rawText.trim()) {
+          if (statusEl) statusEl.innerHTML = '⚠️ 영수증에서 글자를 찾지 못했습니다. 밝은 곳에서 선명하게 찍어 다시 시도해주세요.';
+          return;
+        }
+        const parsed = parseReceiptText(rawText);
+        applyParsedReceiptToModal(parsed, '영수증 사진 OCR 인식');
+      } catch (err) {
+        if (statusEl) statusEl.innerHTML = '⚠️ 영수증 인식 중 오류가 발생했습니다. 네트워크 연결을 확인하거나 문자 붙여넣기를 이용해주세요.';
+      } finally {
+        event.target.value = '';
+      }
     }
 
     function handleSaveExpense(e, editId) {
