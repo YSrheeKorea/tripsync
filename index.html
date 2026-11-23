@@ -956,7 +956,7 @@
 
     async function fetchFromGist(silent = false) {
       if (!syncConfig.gistId || isPushingGist) return;
-      if (!silent) showToast('GitHub에서 최신 데이터를 가져오는 중...');
+      if (!silent) showToast('채팅방에서 최신 데이터를 가져오는 중...');
       try {
         const result = await fetchRemoteGistData();
         if (!result.ok) {
@@ -985,7 +985,7 @@
 
     async function pushToGist(notify = true) {
       if (!syncConfig.gistId || !syncConfig.githubToken) {
-        if (notify) showToast('Gist ID와 GitHub Token이 설정되어 있어야 합니다.');
+        if (notify) showToast('채팅방 가입 아이디와 비밀번호를 먼저 입력해주세요.');
         return;
       }
       if (isPushingGist) {
@@ -993,9 +993,9 @@
         return;
       }
       isPushingGist = true;
-      if (notify) showToast('최신 내역 병합 후 GitHub에 저장 중...');
+      if (notify) showToast('최신 내역 병합 후 채팅방에 저장 중...');
       try {
-        // 저장 직전 GitHub 최신본을 먼저 조회해 동시 수정 내용을 항목 단위로 자동 병합
+        // 저장 직전 최신본을 먼저 조회해 동시 수정 내용을 항목 단위로 자동 병합
         let mergedRemote = false;
         try {
           const latest = await fetchRemoteGistData();
@@ -1033,10 +1033,10 @@
             renderAll();
             showToast('🤝 다른 친구의 수정 내용과 자동 병합되어 저장되었습니다!');
           } else if (notify) {
-            showToast('GitHub에 성공적으로 저장되었습니다!');
+            showToast('채팅방에 성공적으로 저장되었습니다!');
           }
         } else {
-          if (notify) showToast('GitHub 저장에 실패했습니다. 토큰 권한을 확인해주세요.');
+          if (notify) showToast('채팅방 저장에 실패했습니다. 비밀번호를 확인해주세요.');
         }
       } catch (e) {
         if (notify) showToast('네트워크 오류가 발생했습니다.');
@@ -1071,14 +1071,14 @@
           syncConfig.autoSync = true;
           syncConfig.lastSyncedAt = Date.now();
           saveSyncConfig(syncConfig);
-          showToast(`새 방이 생성되었습니다! (ID: ${resData.id.slice(0, 8)}...)`);
+          showToast(`새 채팅방이 생성되었습니다! (아이디: ${resData.id.slice(0, 8)}...)`);
           return resData.id;
         } else {
-          showToast('Gist 생성 실패: 올바른 Personal Access Token인지 확인해주세요.');
+          showToast('채팅방 생성 실패: 올바른 비밀번호인지 확인해주세요.');
           return null;
         }
       } catch (e) {
-        showToast('Gist 생성 중 오류가 발생했습니다.');
+        showToast('채팅방 생성 중 오류가 발생했습니다.');
         return null;
       }
     }
@@ -1174,11 +1174,11 @@
       }
       const localOk = await checkAndSyncLocalServer(false);
       if (!localOk) {
-        showToast('현재 로컬 보안 모드입니다. GitHub 비공개 Gist를 연결해보세요.');
+        showToast('현재 로컬 보안 모드입니다. 채팅방 가입 아이디와 비밀번호를 연결해보세요.');
       }
     }
 
-    // 주기적 동기화 폴링 (로컬 서버 또는 Gist)
+    // 주기적 동기화 폴링 (로컬 서버 또는 비공개 채팅방)
     setInterval(() => {
       checkAndSyncLocalServer(true);
       if (syncConfig.autoSync && syncConfig.gistId) {
@@ -1204,7 +1204,7 @@
       } else if (syncConfig.gistId) {
         badge.innerHTML = `
           <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-          <span class="text-[11px] text-secondary font-bold">🛡️ GitHub 비공개 동기화</span>
+          <span class="text-[11px] text-secondary font-bold">🛡️ 채팅방 동기화 중</span>
         `;
       } else {
         badge.innerHTML = `
@@ -2676,8 +2676,8 @@
                   <span>Wi-Fi 로컬 서버</span>
                 </button>
                 <button type="button" onclick="switchSyncTab('gist')" id="tab-btn-gist" class="flex-1 pb-2 text-on-surface-variant transition-all flex items-center justify-center gap-1">
-                  <span class="material-symbols-outlined text-[16px]">cloud</span>
-                  <span>GitHub Gist</span>
+                  <span class="material-symbols-outlined text-[16px]">lock</span>
+                  <span>채팅방 접속</span>
                 </button>
               </div>
 
@@ -2686,14 +2686,14 @@
                 <div class="p-3 rounded-2xl bg-secondary/10 border border-secondary/25 flex items-center gap-2 text-[11px]">
                   <span class="material-symbols-outlined text-[16px] text-secondary shrink-0">verified_user</span>
                   <span class="text-on-surface font-medium leading-relaxed">
-                    <strong>완전 비공개 보안 모드</strong> — 외부 공개 중계 서버를 사용하지 않으며, GitHub 비공개 Gist·로컬·Wi-Fi로만 안전하게 저장됩니다.
+                    <strong>완전 비공개 보안 모드</strong> — 외부 공개 서버를 사용하지 않으며, 비공개 채팅방·로컬·Wi-Fi로만 안전하게 저장됩니다.
                   </span>
                 </div>
 
-                <!-- 룸 코드 / Gist 공유 카드 -->
+                <!-- 룸 코드 / 채팅방 공유 카드 -->
                 <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 flex items-center justify-between gap-2">
                   <div class="min-w-0">
-                    <span class="text-[11px] font-semibold text-on-surface-variant block">${syncConfig.gistId ? '연결된 GitHub 비공개 방' : '우리 여행 참여 코드'}</span>
+                    <span class="text-[11px] font-semibold text-on-surface-variant block">${syncConfig.gistId ? '연결된 비공개 채팅방' : '우리 여행 참여 코드'}</span>
                     <strong class="text-lg sm:text-xl font-black text-primary tracking-wider font-mono truncate block">${syncConfig.gistId ? syncConfig.gistId.slice(0, 12) + '...' : curCode}</strong>
                   </div>
                   <div class="flex items-center gap-1.5 shrink-0">
@@ -2762,26 +2762,26 @@
                 </button>
               </div>
 
-              <!-- 탭 3: GitHub Gist (고급 옵션) -->
+              <!-- 탭 3: 비공개 채팅방 접속 -->
               <div id="sync-view-gist" class="hidden space-y-3">
                 <div class="space-y-1">
                   <div class="flex items-center justify-between">
-                    <label class="text-xs font-bold">GitHub Personal Access Token (PAT)</label>
-                    <a href="https://github.com/settings/tokens/new?scopes=gist&description=TripSync" target="_blank" class="text-[11px] text-primary font-bold hover:underline">토큰 발급</a>
+                    <label class="text-xs font-bold">채팅방 가입 아이디</label>
+                    <button type="button" onclick="handleAutoCreateGist()" class="text-[11px] text-primary font-bold hover:underline">새 채팅방 자동 생성</button>
                   </div>
-                  <input type="password" id="m_s_token" value="${syncConfig.githubToken || ''}" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="w-full p-2.5 rounded-xl border border-outline-variant bg-surface text-xs font-mono" />
+                  <input type="text" id="m_s_gist" value="${syncConfig.gistId || ''}" placeholder="채팅방 가입 아이디를 입력하세요" class="w-full p-2.5 rounded-xl border border-outline-variant bg-surface text-xs font-mono" />
                 </div>
 
                 <div class="space-y-1">
                   <div class="flex items-center justify-between">
-                    <label class="text-xs font-bold">Gist ID</label>
-                    <button type="button" onclick="handleAutoCreateGist()" class="text-[11px] text-primary font-bold hover:underline">새 방 자동 생성</button>
+                    <label class="text-xs font-bold">채팅방 비밀번호</label>
+                    <a href="https://github.com/settings/tokens/new?scopes=gist&description=TripSync" target="_blank" class="text-[11px] text-primary font-bold hover:underline">비밀번호 발급</a>
                   </div>
-                  <input type="text" id="m_s_gist" value="${syncConfig.gistId || ''}" placeholder="Gist ID" class="w-full p-2 rounded-xl border border-outline-variant bg-surface text-xs font-mono" />
+                  <input type="password" id="m_s_token" value="${syncConfig.githubToken || ''}" placeholder="채팅방 비밀번호를 입력하세요" class="w-full p-2.5 rounded-xl border border-outline-variant bg-surface text-xs font-mono" />
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
-                  <button type="button" onclick="pushToGist(true)" class="py-2 rounded-xl bg-primary text-on-primary text-xs font-bold">GitHub에 저장</button>
+                  <button type="button" onclick="pushToGist(true)" class="py-2 rounded-xl bg-primary text-on-primary text-xs font-bold">채팅방에 저장</button>
                   <button type="button" onclick="fetchFromGist(false)" class="py-2 rounded-xl bg-surface-container text-on-surface text-xs font-bold">최신 가져오기</button>
                 </div>
               </div>
@@ -3191,7 +3191,7 @@
     async function handleAutoCreateGist() {
       const token = document.getElementById('m_s_token').value.trim();
       if (!token) {
-        alert('토큰을 먼저 입력해주세요.');
+        alert('채팅방 비밀번호를 먼저 입력해주세요.');
         return;
       }
       const newId = await createNewGistRoom(token);
