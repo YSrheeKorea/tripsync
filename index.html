@@ -1210,6 +1210,7 @@
       return {
         version: Math.max(local.version || 1, remote.version || 1),
         updatedAt: Math.max(local.updatedAt || 0, remote.updatedAt || 0, Date.now()),
+        _roomAuthVault: local._roomAuthVault || remote._roomAuthVault || undefined,
         deletedIds,
         tripInfo,
         friends,
@@ -1218,6 +1219,43 @@
         expenses,
         checklists
       };
+    }
+
+    // 비공개 채팅방(Secret Gist) 내부 AES-256-GCM 암호화 인증 볼트
+    // (PC에 비밀번호가 연결되어 있으면 휴대폰은 별도 입력 없이 자동으로 공동편집 권한을 동기화받음)
+    async function deriveVaultAesKey(gistId) {
+      const raw = new TextEncoder().encode(`TripSync-SecretVault-v1::${(gistId || '').trim().toLowerCase()}`);
+      const hash = await window.crypto.subtle.digest('SHA-256', raw);
+      return window.crypto.subtle.importKey('raw', hash, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+    }
+
+    async function encryptRoomAuthVault(token, gistId) {
+      if (!token || !gistId || !window.crypto?.subtle) return undefined;
+      try {
+        const key = await deriveVaultAesKey(gistId);
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const pt = new TextEncoder().encode(token.trim());
+        const ctBuf = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, pt);
+        let ivBin = '', ctBin = '';
+        iv.forEach(b => ivBin += String.fromCharCode(b));
+        new Uint8Array(ctBuf).forEach(b => ctBin += String.fromCharCode(b));
+        return { v: 1, iv: btoa(ivBin), ct: btoa(ctBin) };
+      } catch (e) {
+        return undefined;
+      }
+    }
+
+    async function decryptRoomAuthVault(vault, gistId) {
+      if (!vault || !vault.iv || !vault.ct || !gistId || !window.crypto?.subtle) return '';
+      try {
+        const key = await deriveVaultAesKey(gistId);
+        const iv = Uint8Array.from(atob(vault.iv), c => c.charCodeAt(0));
+        const ct = Uint8Array.from(atob(vault.ct), c => c.charCodeAt(0));
+        const ptBuf = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+        return sanitizeToken(new TextDecoder().decode(ptBuf));
+      } catch (e) {
+        return '';
+      }
     }
 
     // 2. GitHub Gist 동기화 (동시 수정 자동 병합 Smart Merge 지원)
@@ -1329,6 +1367,19 @@
         const remoteData = result.data;
         if (!remoteData || !remoteData.tripInfo) return;
 
+        // 비공개 채팅방에 암호화된 공동편집 볼트(_roomAuthVault)가 있으면 휴대폰에 자동 적용!
+        if (remoteData._roomAuthVault) {
+          const unlockedToken = await decryptRoomAuthVault(remoteData._roomAuthVault, syncConfig.gistId);
+          if (unlockedToken && syncConfig.githubToken !== unlockedToken) {
+            syncConfig.githubToken = unlockedToken;
+            saveSyncConfig(syncConfig);
+          }
+          appState._roomAuthVault = remoteData._roomAuthVault;
+        } else if (syncConfig.githubToken && !isPushingGist) {
+          // PC에 올바른 비밀번호가 있는데 아직 서버 볼트가 없으면 1회 자동 업로드하여 휴대폰도 자동 연결되게 함
+          setTimeout(() => pushToGist(false), 300);
+        }
+
         const localFp = getDataContentFingerprint(appState);
         const remoteFp = getDataContentFingerprint(remoteData);
 
@@ -1367,13 +1418,21 @@
       syncModalInputsToConfig();
       if (!syncConfig.gistId) syncConfig.gistId = DEFAULT_GIST_ID;
       const cleanGistId = sanitizeGistId(syncConfig.gistId);
-      const cleanToken = sanitizeToken(syncConfig.githubToken);
+      let cleanToken = sanitizeToken(syncConfig.githubToken);
+
+      // 만약 토큰이 비어있고 appState에 암호화 볼트가 있으면 즉시 복호화
+      if (!cleanToken && appState._roomAuthVault) {
+        cleanToken = await decryptRoomAuthVault(appState._roomAuthVault, cleanGistId);
+        if (cleanToken) {
+          syncConfig.githubToken = cleanToken;
+          saveSyncConfig(syncConfig);
+        }
+      }
 
       if (!cleanGistId || !cleanToken) {
         if (notify) {
           openModal('syncModal');
-          setTimeout(() => switchSyncTab('gist'), 50);
-          showToast('🔑 휴대폰에서 수정 내용을 저장하려면 [채팅방 비밀번호]를 1회 입력해주세요.');
+          showToast('🔑 PC에서 한 번 저장하거나 QR코드를 스캔하면 휴대폰도 자동으로 연결됩니다!');
         }
         return;
       }
@@ -1389,6 +1448,15 @@
         try {
           const latest = await fetchRemoteGistData();
           if (latest.ok && latest.data) {
+            // 만약 휴대폰에 잘못된 비밀번호가 들어있었고 서버에 볼트가 있으면 올바른 토큰으로 자동 교체!
+            if (latest.data._roomAuthVault) {
+              const vaultToken = await decryptRoomAuthVault(latest.data._roomAuthVault, cleanGistId);
+              if (vaultToken && vaultToken !== cleanToken) {
+                cleanToken = vaultToken;
+                syncConfig.githubToken = vaultToken;
+                saveSyncConfig(syncConfig);
+              }
+            }
             const latestFp = getDataContentFingerprint(latest.data);
             if (lastKnownRemoteFp && latestFp !== lastKnownRemoteFp && latestFp !== getDataContentFingerprint(appState)) {
               appState = smartMergeTripStates(appState, latest.data);
@@ -1398,6 +1466,10 @@
         } catch (e) {
           // 사전 조회 실패 시 현재 로컬 상태로 저장 진행
         }
+
+        // 현재 유효한 토큰을 AES-256-GCM으로 암호화하여 비공개 채팅방 데이터에 포함 (휴대폰 자동 인증용)
+        const vault = await encryptRoomAuthVault(cleanToken, cleanGistId);
+        if (vault) appState._roomAuthVault = vault;
 
         appState.updatedAt = getLogicalNow();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
@@ -1417,7 +1489,6 @@
           },
           body: JSON.stringify(payload)
         });
-        // 구형 토큰 호환 폴백
         if (res.status === 401) {
           res = await fetch(`https://api.github.com/gists/${cleanGistId}`, {
             method: 'PATCH',
@@ -1443,7 +1514,12 @@
             showToast('✅ 채팅방에 성공적으로 저장되었습니다!');
           }
         } else {
-          if (notify) showToast(`채팅방 저장 실패 (${res.status}): 비밀번호(gist 권한)를 확인해주세요.`);
+          // 잘못 입력된 비밀번호는 자동 초기화하여 PC 볼트 토큰을 다시 받을 수 있게 처리
+          if (res.status === 401) {
+            syncConfig.githubToken = '';
+            saveSyncConfig(syncConfig);
+          }
+          if (notify) showToast('⚠️ 휴대폰에 입력된 비밀번호가 맞지 않아 초기화했습니다. PC 화면에서 항목을 1번 수정하면 휴대폰도 자동 연결됩니다!');
         }
       } catch (e) {
         if (notify) showToast('네트워크 오류가 발생했습니다.');
