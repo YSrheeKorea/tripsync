@@ -1,0 +1,20 @@
+{
+  "name": "TripSync - 친구들과 함께하는 여행 플래너 & N빵 정산",
+  "short_name": "TripSync",
+  "description": "일정 조율, 지도 이동 동선, 다중 통화 외화 환율 N빵 정산까지 한 번에!",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf8ff",
+  "theme_color": "#006194",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
