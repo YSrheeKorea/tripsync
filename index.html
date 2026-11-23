@@ -165,7 +165,8 @@
       }
     }
 
-    /* 9번: 다크 모드(야간 모드) 전체 테마 자동 오버라이드 */
+    /* 9번 업그레이드: 4대 테마 시스템 (일반 / 다크 / 화이트 / 목산침례교회 엑스팀 보라 테마) */
+    /* 1) 다크 테마 (html.dark) */
     html.dark body,
     html.dark .bg-surface {
       background-color: #0f172a !important;
@@ -206,6 +207,93 @@
       color: #f8fafc !important;
       border-color: #475569 !important;
     }
+
+    /* 2) 화이트 테마 (html.theme-white : 순백 미니멀) */
+    html.theme-white body,
+    html.theme-white .bg-surface {
+      background-color: #ffffff !important;
+      color: #111827 !important;
+    }
+    html.theme-white header,
+    html.theme-white nav {
+      background-color: rgba(255, 255, 255, 0.94) !important;
+      border-color: #e5e7eb !important;
+    }
+    html.theme-white .bg-surface-container-lowest {
+      background-color: #ffffff !important;
+      border-color: #e5e7eb !important;
+    }
+    html.theme-white .bg-surface-container-low {
+      background-color: #f9fafb !important;
+    }
+    html.theme-white .bg-surface-container,
+    html.theme-white .bg-surface-container-high,
+    html.theme-white .bg-surface-container-highest {
+      background-color: #f3f4f6 !important;
+    }
+    html.theme-white .bg-primary {
+      background-color: #111827 !important;
+    }
+    html.theme-white .text-primary {
+      color: #111827 !important;
+    }
+    html.theme-white .bg-primary-fixed,
+    html.theme-white .bg-primary-container {
+      background-color: #f3f4f6 !important;
+      color: #111827 !important;
+    }
+    html.theme-white .from-primary {
+      --tw-gradient-from: #1f2937 !important;
+      --tw-gradient-to: #111827 !important;
+      --tw-gradient-stops: var(--tw-gradient-from), #374151, var(--tw-gradient-to) !important;
+    }
+
+    /* 3) 엑스팀 테마 (html.theme-xteam : 목산침례교회 X-TEAM 바이올렛/보라) */
+    html.theme-xteam body,
+    html.theme-xteam .bg-surface {
+      background-color: #faf5ff !important;
+      color: #1e1035 !important;
+    }
+    html.theme-xteam header,
+    html.theme-xteam nav {
+      background-color: rgba(250, 245, 255, 0.9) !important;
+      border-color: #e9d5ff !important;
+    }
+    html.theme-xteam .bg-surface-container-lowest {
+      background-color: #ffffff !important;
+      border-color: #e9d5ff !important;
+    }
+    html.theme-xteam .bg-surface-container-low {
+      background-color: #f5f3ff !important;
+    }
+    html.theme-xteam .bg-surface-container,
+    html.theme-xteam .bg-surface-container-high {
+      background-color: #ede9fe !important;
+    }
+    html.theme-xteam .bg-surface-container-highest {
+      background-color: #ddd6fe !important;
+    }
+    html.theme-xteam .bg-primary {
+      background-color: #7c3aed !important;
+    }
+    html.theme-xteam .text-primary {
+      color: #6d28d9 !important;
+    }
+    html.theme-xteam .border-primary {
+      border-color: #7c3aed !important;
+    }
+    html.theme-xteam .bg-primary-fixed {
+      background-color: #ede9fe !important;
+      color: #5b21b6 !important;
+    }
+    html.theme-xteam .bg-primary-container {
+      background-color: #8b5cf6 !important;
+    }
+    html.theme-xteam .from-primary {
+      --tw-gradient-from: #6d28d9 !important;
+      --tw-gradient-to: #4c1d95 !important;
+      --tw-gradient-stops: var(--tw-gradient-from), #7c3aed, var(--tw-gradient-to) !important;
+    }
   </style>
 </head>
 
@@ -232,7 +320,10 @@
           ✈️
         </div>
         <div class="flex flex-col min-w-0">
-          <span class="text-lg font-extrabold tracking-tight text-primary leading-tight">TripSync</span>
+          <div class="flex items-center gap-1.5">
+            <span class="text-lg font-extrabold tracking-tight text-primary leading-tight">TripSync</span>
+            <span id="xteamHeaderBadge" class="hidden px-1.5 py-0.5 rounded-full bg-purple-600 text-white text-[9px] font-black tracking-wider shadow-xs">💜 X-TEAM</span>
+          </div>
           <div class="flex items-center gap-1.5" id="syncStatusBadge">
             <span class="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
             <span class="text-[11px] text-on-surface-variant font-medium">로컬 저장 모드</span>
@@ -252,10 +343,10 @@
           title="내 여행 보관함 (새 여행 만들기 / 전환)">
           <span class="material-symbols-outlined text-[20px]">folder_special</span>
         </button>
-        <button id="btnDarkMode" onclick="toggleDarkMode()"
+        <button id="btnDarkMode" onclick="openModal('themeSelectModal')"
           class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high/60 transition-colors"
-          title="다크 모드 전환">
-          <span class="material-symbols-outlined text-[20px]" id="iconDarkMode">dark_mode</span>
+          title="테마 선택 (일반 / 다크 / 화이트 / 엑스팀)">
+          <span class="material-symbols-outlined text-[20px]" id="iconDarkMode">palette</span>
         </button>
         <button onclick="openModal('phrasebookModal')"
           class="w-10 h-10 flex items-center justify-center rounded-full text-primary bg-primary-fixed/60 hover:bg-primary-fixed transition-colors"
@@ -3646,6 +3737,8 @@
         setTimeout(renderModalQRCode, 60);
       } else if (type === 'tripArchiveModal') {
         root.innerHTML = buildTripArchiveModalHtml();
+      } else if (type === 'themeSelectModal') {
+        root.innerHTML = buildThemeSelectModalHtml();
       } else if (type === 'phrasebookModal') {
         const curLang = selectedPhraseLang || detectDestinationLang();
         selectedPhraseLang = curLang;
@@ -5444,28 +5537,126 @@
       `;
     }
 
-    // 9번: 다크 모드(야간 모드)
-    const DARK_MODE_KEY = 'TRIP_SYNC_DARK_MODE';
+    // 9번 업그레이드: 4대 테마 선택 (일반 / 다크 / 화이트 / 목산침례교회 엑스팀 X-TEAM)
+    const THEME_STORAGE_KEY = 'TRIP_SYNC_THEME_MODE';
+    const SUPPORTED_THEMES = {
+      default: {
+        id: 'default',
+        name: '일반 (오션 블루)',
+        desc: '시원하고 깔끔한 기본 블루 테마',
+        icon: 'water_drop',
+        previewBg: 'bg-[#faf8ff] border-[#006194]',
+        dotColor: '#006194'
+      },
+      xteam: {
+        id: 'xteam',
+        name: '💜 엑스팀 (X-TEAM 보라)',
+        desc: '목산침례교회 엑스팀(X-TEAM) 전용 퍼플 & 바이올렛 테마',
+        icon: 'auto_awesome',
+        previewBg: 'bg-[#faf5ff] border-[#7c3aed]',
+        dotColor: '#7c3aed'
+      },
+      white: {
+        id: 'white',
+        name: '화이트 (퓨어 미니멀)',
+        desc: '순백의 깔끔한 배경과 블랙 포인트 테마',
+        icon: 'light_mode',
+        previewBg: 'bg-white border-stone-900',
+        dotColor: '#111827'
+      },
+      dark: {
+        id: 'dark',
+        name: '다크 (야간 슬레이트)',
+        desc: '야간 이동 시 눈이 편안한 어두운 테마',
+        icon: 'dark_mode',
+        previewBg: 'bg-[#0f172a] border-[#38bdf8]',
+        dotColor: '#0f172a'
+      }
+    };
+
+    function getCurrentTheme() {
+      const saved = localStorage.getItem(THEME_STORAGE_KEY);
+      if (saved && SUPPORTED_THEMES[saved]) return saved;
+      if (localStorage.getItem('TRIP_SYNC_DARK_MODE') === 'true') return 'dark';
+      return 'default';
+    }
+
+    function applyTheme(themeId, notify = false) {
+      const mode = SUPPORTED_THEMES[themeId] ? themeId : 'default';
+      const rootEl = document.documentElement;
+      rootEl.classList.remove('dark', 'theme-white', 'theme-xteam');
+      if (mode === 'dark') rootEl.classList.add('dark');
+      else if (mode === 'white') rootEl.classList.add('theme-white');
+      else if (mode === 'xteam') rootEl.classList.add('theme-xteam');
+
+      localStorage.setItem(THEME_STORAGE_KEY, mode);
+      localStorage.setItem('TRIP_SYNC_DARK_MODE', mode === 'dark' ? 'true' : 'false');
+
+      const badge = document.getElementById('xteamHeaderBadge');
+      if (badge) badge.classList.toggle('hidden', mode !== 'xteam');
+
+      const metaTheme = document.querySelector('meta[name="theme-color"]');
+      if (metaTheme) {
+        metaTheme.setAttribute('content', mode === 'xteam' ? '#7c3aed' : mode === 'dark' ? '#0f172a' : mode === 'white' ? '#ffffff' : '#006194');
+      }
+
+      if (notify) {
+        showToast(`🎨 [${SUPPORTED_THEMES[mode].name}] 테마가 적용되었습니다!`);
+      }
+    }
+
+    function selectThemeAndClose(themeId) {
+      applyTheme(themeId, true);
+      closeModal();
+    }
+
     function initDarkMode() {
-      const saved = localStorage.getItem(DARK_MODE_KEY);
-      if (saved === 'true') {
-        document.documentElement.classList.add('dark');
-      }
-      updateDarkModeIcon();
+      applyTheme(getCurrentTheme(), false);
     }
 
-    function toggleDarkMode() {
-      const isDark = document.documentElement.classList.toggle('dark');
-      localStorage.setItem(DARK_MODE_KEY, isDark ? 'true' : 'false');
-      updateDarkModeIcon();
-      showToast(isDark ? '🌙 야간 다크 모드가 켜졌습니다.' : '☀️ 라이트 모드로 전환되었습니다.');
-    }
+    function buildThemeSelectModalHtml() {
+      const cur = getCurrentTheme();
+      return `
+        <div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div class="bg-surface-container-lowest rounded-3xl max-w-md w-full p-6 shadow-2xl border border-outline-variant/30 space-y-4 my-6">
+            <div class="flex items-center justify-between pb-2 border-b border-surface-container-high">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[22px] text-primary">palette</span>
+                <div>
+                  <h3 class="text-base font-bold text-on-surface">앱 테마 선택</h3>
+                  <p class="text-[11px] text-on-surface-variant">원하는 분위기의 컬러 테마를 선택하세요</p>
+                </div>
+              </div>
+              <button onclick="closeModal()" class="p-1 text-on-surface-variant"><span class="material-symbols-outlined">close</span></button>
+            </div>
 
-    function updateDarkModeIcon() {
-      const icon = document.getElementById('iconDarkMode');
-      if (icon) {
-        icon.innerText = document.documentElement.classList.contains('dark') ? 'light_mode' : 'dark_mode';
-      }
+            <div class="space-y-2.5">
+              ${Object.values(SUPPORTED_THEMES).map(t => {
+                const isSel = cur === t.id;
+                return `
+                  <button type="button" onclick="selectThemeAndClose('${t.id}')" class="w-full p-3.5 rounded-2xl border-2 text-left transition-all flex items-center justify-between gap-3 ${isSel ? 'border-primary bg-primary-fixed/30 shadow-sm' : 'border-outline-variant/30 bg-surface-container-low hover:bg-surface-container'}">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-sm shrink-0" style="background-color: ${t.dotColor}">
+                        <span class="material-symbols-outlined text-[20px]">${t.icon}</span>
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-1.5">
+                          <strong class="text-xs sm:text-sm font-extrabold text-on-surface">${t.name}</strong>
+                          ${t.id === 'xteam' ? `<span class="px-1.5 py-0.2 rounded-full bg-purple-600 text-white text-[9px] font-black">목산침례교회</span>` : ''}
+                        </div>
+                        <p class="text-[11px] text-on-surface-variant mt-0.5 truncate">${t.desc}</p>
+                      </div>
+                    </div>
+                    <span class="material-symbols-outlined text-[20px] ${isSel ? 'text-primary filled' : 'text-outline-variant'}">
+                      ${isSel ? 'check_circle' : 'radio_button_unchecked'}
+                    </span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     // 9번: 멀티 트립(여러 여행) 보관함
